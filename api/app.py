@@ -5,6 +5,9 @@ from flask_cors import CORS
 from supabase import create_client, Client
 from werkzeug.security import generate_password_hash, check_password_hash
 from concurrent.futures import ThreadPoolExecutor
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -12,8 +15,12 @@ CORS(app)
 # ---------------------------------------------------------
 # Supabase Setup (Aapko yahan apni keys daalni padengi)
 # ---------------------------------------------------------
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://nngeqgnnawmrrnsushna.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5uZ2VxZ25uYXdtcnJuc3VzaG5hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzAyNzksImV4cCI6MjA5MTA0NjI3OX0.sGU82wHuysiPPbt44apysEbQpAFBKCxu6Zsn1QhfVus")
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("Missing Supabase URL or Key. Please set them in the .env file.")
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ---------------------------------------------------------
@@ -415,3 +422,4 @@ if __name__ == '__main__':
     ensure_admin()
     print("Backend Chal Raha Hai... Browser Me Login Karein!")
     app.run(host='0.0.0.0', debug=True, port=5000)
+                                                     
