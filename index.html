@@ -111,6 +111,17 @@
         @keyframes modalPop { from { opacity: 0; transform: scale(0.85) translateY(20px); filter: blur(4px); } to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); } }
         tbody tr { animation: fadeRow 0.4s ease-out backwards; }
         @keyframes fadeRow { from { opacity: 0; transform: translateX(-15px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* FAQ Accordion Styles */
+        .faq-item { background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 10px; overflow: hidden; transition: all 0.3s; }
+        .faq-question { padding: 12px 15px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; align-items: center; color: var(--primary); font-size: 14px; }
+        .faq-question:hover { background: rgba(255,255,255,0.05); }
+        .faq-answer { padding: 0 15px; max-height: 0; opacity: 0; overflow: hidden; transition: all 0.3s ease-out; font-size: 13px; color: #94a3b8; }
+        .faq-item.active .faq-answer { padding: 12px 15px; max-height: 200px; opacity: 1; border-top: 1px solid rgba(255,255,255,0.05); }
+        .faq-item.active .faq-icon { transform: rotate(180deg); }
+        .faq-icon { transition: transform 0.3s; font-size: 12px; }
+        :root.light-mode .faq-item { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+        :root.light-mode .faq-answer { color: #475569; }
     </style>
 </head>
 <body>
@@ -148,6 +159,11 @@
             <div class="role-card" onclick="showLogin('Owner')"><h3>👑</h3><h4>Owner</h4></div>
             <div class="role-card" onclick="showLogin('Milk Man')"><h3>🛵</h3><h4>Milk Man</h4></div>
             <div class="role-card" onclick="showLogin('Customer')"><h3>🥛</h3><h4>Customer</h4></div>
+        </div>
+
+        <!-- Help Option -->
+        <div style="margin-top: 30px; text-align: center;">
+            <button class="btn-save" style="background: transparent; border: 1px solid var(--primary); color: var(--primary); width: auto; padding: 10px 25px;" onclick="openHelpModal()">🆘 Need Help?</button>
         </div>
     </div>
 
@@ -409,14 +425,21 @@
                 <input type="date" id="gbDate" required>
                 <input type="text" id="gbCustName" placeholder="Customer Name" required>
                 <input type="text" id="gbMobile" placeholder="Mobile Number (Optional)" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-                <select id="gbItemAdd" onchange="autoFillGbRate()" required><option value="">-- Select Product --</option></select>
-                <div style="display:flex; gap:10px;">
-                    <input type="number" id="gbQtyAdd" placeholder="Qty" oninput="calcGbTotal()" required style="flex:1;">
-                    <input type="number" id="gbRateAdd" placeholder="Rate (₹)" oninput="calcGbTotal()" required style="flex:1;">
-                </div>
             </div>
-            <div id="gbTotalDisplay" style="font-weight:bold; color:var(--success); margin-top:5px; font-size:18px; text-align:right;">Total: ₹0</div>
-            <button class="btn-save" style="margin-top:15px; font-size: 16px; padding: 12px;" onclick="saveGeneralBill()">Generate & Print Bill</button>
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 1px solid #475569; margin-top: 10px;">
+                <h4 style="margin-top:0; margin-bottom:15px; color:var(--primary); font-size:15px;">🛒 Add Items to Bill</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+                    <select id="gbItemAdd" style="flex: 1; min-width: 150px; margin: 0;" onchange="autoFillGbRate()"><option value="">-- Select Product --</option></select>
+                    <input type="number" id="gbQtyAdd" placeholder="Qty" style="width: 80px; margin: 0;">
+                    <input type="number" id="gbRateAdd" placeholder="Rate (₹)" style="width: 100px; margin: 0;">
+                    <button type="button" class="btn-save" style="width: auto; padding: 12px 20px; margin-bottom: 2px;" onclick="addGbItem()">Add Item</button>
+                </div>
+                
+                <h4 style="margin-top:20px; margin-bottom:10px; color:var(--primary); font-size:14px; border-top: 1px dashed #475569; padding-top: 15px;">📋 Added Items</h4>
+                <ul id="gbItemList" style="margin: 0; padding-left: 0; list-style-type: none; font-size: 14px; color: var(--text);"></ul>
+                <div id="gbTotalDisplay" style="font-weight:bold; color:var(--success); margin-top:15px; font-size:18px; text-align:right;">Total: ₹0</div>
+            </div>
+            <button class="btn-save" style="margin-top:20px; font-size: 16px; padding: 12px;" onclick="saveGeneralBill()">Generate & Print Bill</button>
         </div>
 
         <div id="gb-tab-old" class="hidden">
@@ -645,6 +668,79 @@
             </div>
             
             <div id="owner-report-data" style="overflow-y:auto; flex:1; padding-right:10px;"></div>
+        </div>
+    </div>
+
+    <!-- HELP & SUPPORT MODAL -->
+    <div id="helpModal" class="hidden" style="position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10002; display:flex; justify-content:center; align-items:center; padding:20px;">
+        <div class="modal-box" style="background:var(--card); width:100%; max-width:500px; padding:20px; border-radius:12px; max-height:85vh; display:flex; flex-direction:column; border:1px solid #475569;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                <h3 style="margin:0;">🆘 Help & Support</h3>
+                <button onclick="closeHelpModal()" style="background:transparent; color:var(--danger); border:none; font-size:24px; cursor:pointer;">&times;</button>
+            </div>
+            
+            <div style="overflow-y:auto; flex:1; padding-right:10px;">
+                <p style="color:var(--text); font-size: 14px; margin-top:0; margin-bottom: 15px;">Aam taur par aane wali problems ke solutions niche diye gaye hain. Kisi bhi error par click karein:</p>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)"><span>❌ Login Failed / Wrong ID Password?</span><span class="faq-icon">▼</span></div>
+                    <div class="faq-answer">Kripya dhyan dein ki aapne sahi Role (Owner, Milk Man, Customer) select kiya hai. Apna ID aur Password check karein. Agar aap password bhool gaye hain, toh Owner se sampark karein.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)"><span>🌐 Connection Failed / Network Error?</span><span class="faq-icon">▼</span></div>
+                    <div class="faq-answer">Apna internet connection check karein. Agar aap local computer par hain, toh ensure karein ki Backend server (Python) chalu hai aur screen par "Backend Chal Raha Hai..." likha aa raha hai.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)"><span>📅 Kal ka doodh band karna/badalna hai?</span><span class="faq-icon">▼</span></div>
+                    <div class="faq-answer">Apne Customer dashboard mein jayein, "My Order" (🛒) tab select karein, wahan "One-Time Change" mein agle din ki date select karein aur quantity ko update/0 karke save kar dein.</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)"><span>🔄 Data sync ya update nahi ho raha?</span><span class="faq-icon">▼</span></div>
+                    <div class="faq-answer">Page ko refresh karein, ya logout karke dobara login karein. Agar phir bhi problem aaye toh ensure karein background data properly sync ho gaya hai.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)"><span>🔑 Password Reset/Change Kaise Karein?</span><span class="faq-icon">▼</span></div>
+                    <div class="faq-answer">Owner apne dashboard se "Customers" ya "Milk Men" list mein jakar "Pass" button daba kar kisi ka bhi password reset kar sakte hain. Khud ka password badalne ke liye upar "Profile" menu me jayein.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)"><span>📦 Naya Product ya Rate kaise add karein?</span><span class="faq-icon">▼</span></div>
+                    <div class="faq-answer">"Manage Products" (📦) menu mein jayein. Wahan aap doodh ke alawa naye items (jaise Ghee, Paneer) aur unka naya rate add ya update kar sakte hain.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)"><span>💸 Customer Online Payment kaise karein?</span><span class="faq-icon">▼</span></div>
+                    <div class="faq-answer">Customer apne portal me "Payment" (💸) tab me jayen, "Online" select karein, Owner ka QR code scan karke payment karein aur screenshot upload karke submit kar dein.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)"><span>🔢 Delivery Sequence (Kram) kaise badlein?</span><span class="faq-icon">▼</span></div>
+                    <div class="faq-answer">Owner ya Milk Man "Daily Feed" tab me "Edit Seq" button par click karke subah ya shaam ke hisaab se customers ko nayi sequence (1, 2, 3...) de sakte hain.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)"><span>🧾 Bina khate wale customer ka bill kaise banayein?</span><span class="faq-icon">▼</span></div>
+                    <div class="faq-answer">"General Bill" (🧾) section ka use karein. Naye customer ka naam, mobile no. aur items daal kar turant invoice / receipt print kar sakte hain.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)"><span>💳 Apna QR Code ya Profile Photo kaise badlein?</span><span class="faq-icon">▼</span></div>
+                    <div class="faq-answer">Upar right corner mein User Profile (👤) par click karein. "Edit Profile" daba kar aap apni photo, details, aur Payment QR code update karke save kar sakte hain.</div>
+                </div>
+
+                <!-- Contact Info Box inside Modal -->
+                <div style="margin-top: 25px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 12px; font-size: 13px; text-align: center; border: 1px solid #475569;">
+                    <p style="margin: 0 0 8px 0; font-weight: bold; color: var(--warning);">Still facing issues? Contact Us:</p>
+                    <h4 style="margin: 0 0 8px 0; color: var(--primary);">Expert Computer Services</h4>
+                    <p style="margin: 4px 0;">Rishi Bairagi: <a href="tel:6263494837" style="color: var(--text); text-decoration: underline; font-weight: bold;">6263494837</a></p>
+                    <p style="margin: 4px 0;">Harish Kumawat: <a href="tel:9425976804" style="color: var(--text); text-decoration: underline; font-weight: bold;">9425976804</a></p>
+                    <p style="margin: 4px 0;">Email: <a href="mailto:hkexpertmds@gmail.com" style="color: var(--primary); text-decoration: none; font-weight: bold;">hkexpertmds@gmail.com</a></p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1474,9 +1570,8 @@
                 document.getElementById('gbDate').value = dObj.toISOString().split('T')[0];
                 document.getElementById('gbCustName').value = '';
                 document.getElementById('gbMobile').value = '';
-                document.getElementById('gbQtyAdd').value = '';
-                document.getElementById('gbRateAdd').value = '';
-                document.getElementById('gbTotalDisplay').innerText = 'Total: ₹0';
+                currentGbItems = [];
+                renderGbItems();
                 
                 let itemSelect = document.getElementById('gbItemAdd');
                 itemSelect.innerHTML = '<option value="">-- Select Product --</option>';
@@ -1661,18 +1756,47 @@
             if(tab === 'old') renderGeneralBills();
         }
 
+        let currentGbItems = [];
+        
+        function renderGbItems() {
+            const ul = document.getElementById('gbItemList');
+            let html = '';
+            let grandTotal = 0;
+            currentGbItems.forEach((d, i) => {
+                grandTotal += d.total;
+                html += `<li style="margin-bottom:5px;"><b>${d.item}</b> : ${d.qty} x ₹${d.rate} = <b>₹${d.total.toFixed(2)}</b> 
+                <button type="button" class="badge" style="background:var(--danger); margin-left: 10px;" onclick="removeGbItem(${i})">X</button></li>`;
+            });
+            if(ul) ul.innerHTML = html;
+            document.getElementById('gbTotalDisplay').innerText = `Total: ₹${grandTotal.toFixed(2)}`;
+        }
+
+        function addGbItem() {
+            const item = document.getElementById('gbItemAdd').value;
+            const qty = parseFloat(document.getElementById('gbQtyAdd').value) || 0;
+            const rate = parseFloat(document.getElementById('gbRateAdd').value) || 0;
+            if(!item) return alert("Select an item!");
+            if(qty <= 0) return alert("Enter valid quantity!");
+            
+            currentGbItems = currentGbItems.filter(i => i.item !== item);
+            currentGbItems.push({ item: item, qty: qty, rate: rate, total: qty * rate });
+            renderGbItems();
+            
+            document.getElementById('gbQtyAdd').value = ''; 
+            document.getElementById('gbRateAdd').value = ''; 
+            document.getElementById('gbItemAdd').value = '';
+        }
+
+        function removeGbItem(i) {
+            currentGbItems.splice(i, 1);
+            renderGbItems();
+        }
+
         function autoFillGbRate() {
             const select = document.getElementById('gbItemAdd');
             const opt = select.options[select.selectedIndex];
             if(opt && opt.dataset.rate) document.getElementById('gbRateAdd').value = opt.dataset.rate;
             else document.getElementById('gbRateAdd').value = '';
-            calcGbTotal();
-        }
-
-        function calcGbTotal() {
-            let q = parseFloat(document.getElementById('gbQtyAdd').value) || 0;
-            let r = parseFloat(document.getElementById('gbRateAdd').value) || 0;
-            document.getElementById('gbTotalDisplay').innerText = `Total: ₹${(q * r).toFixed(2)}`;
         }
         
         function renderGeneralBills() {
@@ -1683,17 +1807,26 @@
             let html = '';
             let totalAmt = 0;
             
-            transactions.slice().reverse().forEach((t, i) => {
-                if (t.shift !== 'General Bill') return;
+            let gbDisplayList = [];
+            transactions.forEach((t, i) => {
+                if (t.shift === 'General Bill') {
+                    gbDisplayList.push({ t, realIdx: i });
+                }
+            });
+            
+            gbDisplayList.forEach((item, index) => {
+                item.serial = index + 1;
+            });
+            
+            gbDisplayList.reverse().forEach(({ t, realIdx, serial }) => {
                 if (filterDateStr && t.date !== filterDateStr) return;
                 
-                const realIdx = transactions.length - 1 - i;
                 totalAmt += parseFloat(t.total || 0);
                 
                 let displayItem = formatItemDisplay(t.item);
                 
                 html += `<tr>
-                    <td><b>GB-${t.id}</b><br><span style="font-size:11px; color:#94a3b8;">${t.date}</span></td>
+                    <td><b>GB-${serial}</b><br><span style="font-size:11px; color:#94a3b8;">${t.date}</span></td>
                     <td>${t.cust}</td>
                     <td>${displayItem}</td>
                     <td style="color:var(--success); font-weight:bold;">₹${t.total}</td>
@@ -1710,14 +1843,18 @@
         
         function reprintGb(idx) {
             const t = transactions[idx];
-            let itemText = '', qtyText = '', rateText = '';
+            let itemsArr = [];
             try {
-                let items = JSON.parse(t.item);
-                itemText = items[0].item; qtyText = items[0].qty; rateText = items[0].rate;
+                itemsArr = JSON.parse(t.item);
+                if (!Array.isArray(itemsArr)) throw new Error();
             } catch(e) {
-                itemText = t.item; qtyText = t.qty; rateText = t.rate;
+                itemsArr = [{ item: t.item, qty: t.qty, rate: t.rate, total: t.total }];
             }
-            printBillHTML(t.id, t.date, t.cust, "", itemText, qtyText, rateText, parseFloat(t.total));
+            
+            let gbTransactions = transactions.filter(tx => tx.shift === 'General Bill');
+            let serialNo = gbTransactions.findIndex(tx => tx.id === t.id) + 1;
+
+            printBillHTML(serialNo, t.date, t.cust, "", itemsArr, parseFloat(t.total));
         }
 
         async function saveGeneralBill() {
@@ -1730,16 +1867,13 @@
             const custName = document.getElementById('gbCustName').value.trim();
             const mobileNum = document.getElementById('gbMobile').value.trim();
             const shift = 'General Bill'; // STRICT SHIFT FLAG FOR ISOLATION
-            const item = document.getElementById('gbItemAdd').value;
-            const qty = parseFloat(document.getElementById('gbQtyAdd').value) || 0;
-            const rate = parseFloat(document.getElementById('gbRateAdd').value) || 0;
             
-            if(!custName || !item || qty <= 0) return alert("Please fill all details correctly.");
+            if(!custName) return alert("Please fill customer name.");
+            if(currentGbItems.length === 0) return alert("Please add at least one item to the bill.");
             
-            let total = qty * rate;
-            let itemArr = [{ item: item, qty: qty, rate: rate, total: total }];
+            let grandTotal = currentGbItems.reduce((sum, i) => sum + i.total, 0);
 
-            let data = { date: dateStr, cust: custName, item: JSON.stringify(itemArr), qty: '-', rate: total, total: total, company: currentUser.company, shift: shift };
+            let data = { date: dateStr, cust: custName, item: JSON.stringify(currentGbItems), qty: '-', rate: grandTotal, total: grandTotal, company: currentUser.company, shift: shift };
 
             const btn = event.target; btn.innerText = "Saving...";
             try {
@@ -1749,13 +1883,16 @@
                 renderGeneralBills(); 
                 alert("General Bill Created Successfully!");
                 
-                printBillHTML(savedData.id, dateStr, custName, mobileNum, item, qty, rate, total);
+                let gbTransactions = transactions.filter(t => t.shift === 'General Bill');
+                let serialNo = gbTransactions.length;
+                
+                printBillHTML(serialNo, dateStr, custName, mobileNum, currentGbItems, grandTotal);
                 switchGbTab('old'); // Switch to old bills tab automatically
             } catch(e) { alert("Network Error!"); }
             btn.innerText = "Generate & Print Bill";
         }
         
-        function printBillHTML(billId, dateStr, custName, mobileNum, item, qty, rate, total) {
+        function printBillHTML(serialNo, dateStr, custName, mobileNum, itemsArr, total) {
             let companyName = currentUser.company && currentUser.company !== 'Default' ? currentUser.company : 'Dairy Ledger';
                 let printHtml = `<html><head><title>Cash Memo</title><style>
                     body { font-family: sans-serif; padding: 20px; color: black; max-width: 400px; margin: auto; }
@@ -1771,13 +1908,13 @@
                     <h2>${companyName.toUpperCase()}</h2>
                     <h4>General Bill / Cash Memo</h4>
                     <hr>
-                <p style="margin:5px 0; font-size:14px;"><b>Bill No:</b> GB-${billId}</p>
+                <p style="margin:5px 0; font-size:14px;"><b>Bill No:</b> GB-${serialNo}</p>
                     <p style="margin:5px 0; font-size:14px;"><b>Date:</b> ${dateStr}</p>
                     <p style="margin:5px 0; font-size:14px;"><b>Customer:</b> ${custName}</p>
                     ${mobileNum ? `<p style="margin:5px 0; font-size:14px;"><b>Mobile:</b> ${mobileNum}</p>` : ''}
                     <table>
                         <tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>
-                        <tr><td>${item}</td><td>${qty}</td><td>₹${rate}</td><td>₹${total.toFixed(2)}</td></tr>
+                        ${itemsArr.map(it => `<tr><td>${it.item}</td><td>${it.qty}</td><td>₹${it.rate}</td><td>₹${(it.total || (it.qty*it.rate)).toFixed(2)}</td></tr>`).join('')}
                     </table>
                     <div class="total"><b>Grand Total: ₹${total.toFixed(2)}</b></div>
                     <hr style="margin-top:20px;">
