@@ -88,9 +88,22 @@
         
         .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
         @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 1.2rem; border-radius: 20px; }
             .menu-grid { grid-template-columns: repeat(2, 1fr); }
             .box-btn { min-height: 90px; padding: 15px 5px; font-size: 13px; }
             .box-btn span { font-size: 24px !important; margin-bottom: 5px !important; }
+            
+            /* SMART HEADER FIX FOR MOBILE */
+            #app-header { flex-wrap: wrap !important; padding: 10px 15px !important; gap: 5px 0 !important; }
+            #app-header > div:nth-child(1) { flex: 1 1 50% !important; justify-content: flex-start !important; }
+            #app-header > div:nth-child(3) { flex: 1 1 40% !important; justify-content: flex-end !important; padding-right: 0 !important; }
+            #header-company-name { position: static !important; transform: none !important; flex: 1 1 100% !important; text-align: left !important; font-size: 12px !important; color: #94a3b8 !important; margin-left: 45px !important; white-space: normal !important; overflow: visible !important; letter-spacing: normal !important; }
+            
+            /* RESPONSIVE TABLES & FORMS */
+            table { display: block; overflow-x: auto; white-space: nowrap; width: 100%; border-spacing: 0 4px; }
+            th, td { padding: 8px 10px; font-size: 12px; }
+            .grid-form { grid-template-columns: 1fr; gap: 10px; }
         }
         
         /* SPINNER ANIMATION */
@@ -949,6 +962,7 @@
             localStorage.removeItem('sessionAuth');
             localStorage.removeItem('sessionUser');
             sessionStorage.removeItem('lastView');
+            window.location.hash = ''; // Clear routing hash
             location.reload();
         }
 
@@ -1052,11 +1066,32 @@
             }
         });
 
+        // --- BROWSER / PHONE BACK BUTTON LOGIC ---
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.view) {
+                showView(event.state.view, true);
+            } else {
+                let hash = window.location.hash.replace('#', '');
+                if (hash && document.getElementById(hash)) {
+                    showView(hash, true);
+                } else if (currentUser) {
+                    let homeId = currentUser.type === 'Milk Man' ? 'ledger-master' : (currentUser.type === 'Customer' ? 'customer-self-view' : 'main-menu');
+                    showView(homeId, true);
+                } else {
+                    showView('landing-page', true);
+                }
+            }
+        });
+
         function goBack() {
-            if (!currentUser) return showView('landing-page');
-            if (currentUser.type === 'Milk Man') showView('ledger-master');
-            else if (currentUser.type === 'Customer') showView('customer-self-view');
-            else showView('main-menu');
+            if (window.history.length > 1 && window.location.hash) {
+                history.back();
+            } else {
+                if (!currentUser) return showView('landing-page');
+                if (currentUser.type === 'Milk Man') showView('ledger-master');
+                else if (currentUser.type === 'Customer') showView('customer-self-view');
+                else showView('main-menu');
+            }
         }
 
         
@@ -1465,7 +1500,11 @@
             applyTranslations();
         }
 
-        function showView(id) {
+        function showView(id, isBack = false) {
+            if (!isBack && window.location.hash !== `#${id}`) {
+                history.pushState({ view: id }, '', `#${id}`);
+            }
+
             document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
             
@@ -1473,7 +1512,7 @@
 
             const isPreLogin = ['landing-page', 'login-page', 'register-page'].includes(id);
             document.getElementById('app-header').classList.toggle('hidden', isPreLogin);
-            document.body.style.paddingTop = isPreLogin ? '20px' : '95px';
+            document.body.style.paddingTop = isPreLogin ? '20px' : '80px';
 
             let homeId = 'main-menu';
             if(currentUser) { if(currentUser.type === 'Milk Man') homeId = 'ledger-master'; else if(currentUser.type === 'Customer') homeId = 'customer-self-view'; }
@@ -2920,7 +2959,7 @@
                 if (selectedMM && c.milkman_id !== selectedMM) return false;
                 if (c.shift !== 'Both' && c.shift !== currentFeedShift) return false;
                 return true;
-            }).sort((a,b) => getSeq(a) - getSeq(b));
+            }).map(c => ({...c})).sort((a,b) => getSeq(a) - getSeq(b));
 
             if (currentSeqEditList.length === 0) {
                 document.getElementById('seqModalContent').innerHTML = `<p style="color:#94a3b8; font-size:13px; margin:0;">No customers found for sequence editing in ${currentFeedShift} shift.</p>`;
