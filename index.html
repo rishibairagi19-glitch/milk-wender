@@ -801,6 +801,16 @@
             
             setTimeout(() => { if(document.body.contains(toast)) { toast.classList.add('fadeOut'); setTimeout(() => toast.remove(), 300); } }, 4500);
         };
+         // --- GLOBAL DATE FORMATTER (Fixes Timezone/Locale Bugs) ---
+        function formatDate(d) {
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()}`;
+        }
+        function convertToDDMMYYYY(yyyy_mm_dd) {
+            if(!yyyy_mm_dd) return "";
+            let p = yyyy_mm_dd.split('-');
+            if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+            return yyyy_mm_dd;
+        }
 
 
         // 🚀 SPEED FIX: Hardcoded 'RICK-PC' se local network me DNS resolution me 2-3 seconds lagte hain.
@@ -816,7 +826,7 @@
         let currentCustDefaults = [];
         let products = []; let requests = []; let routes = [];
         
-        let currentFeedDateStr = new Date().toLocaleDateString();
+        let currentFeedDateStr = formatDate(new Date());
         let currentFeedShift = 'Morning';
         let currentFeedOffset = 0;
 
@@ -1946,7 +1956,7 @@
             const dateVal = document.getElementById('gbDate').value;
             if(!dateVal) return alert("Please select a date!");
             
-            const dateStr = new Date(dateVal).toLocaleDateString();
+            const dateStr = convertToDDMMYYYY(dateVal);
             const custName = document.getElementById('gbCustName').value.trim();
             const mobileNum = document.getElementById('gbMobile').value.trim();
             const shift = 'General Bill'; // STRICT SHIFT FLAG FOR ISOLATION
@@ -2064,7 +2074,7 @@
         // --- CUSTOMER REQUESTS ---
         async function saveRequest() {
             if (!document.getElementById('reqDate').reportValidity() || !document.getElementById('reqQty').reportValidity()) return;
-            const date = document.getElementById('reqDate').value;
+            const date = convertToDDMMYYYY(document.getElementById('reqDate').value);
             const qty = document.getElementById('reqQty').value;
             if(!date || !qty) return alert("Please enter Date and Requirement!");
             
@@ -2095,7 +2105,7 @@
         async function submitPayment() {
             if (!document.getElementById('payAmount').reportValidity()) return;
             // Ensure the date for the request is in YYYY-MM-DD format for consistency
-            const requestDate = new Date().toISOString().split('T')[0];
+            const requestDate = formatDate(new Date());
             const amount = parseFloat(document.getElementById('payAmount').value);
             if (isNaN(amount) || amount <= 0) return alert("Please enter a valid payment amount.");
             const method = document.querySelector('input[name="payMethod"]:checked').value;
@@ -2345,9 +2355,9 @@
             let html = '';
             
             const dNow = new Date();
-            const today = dNow.toLocaleDateString();
-            const yest = new Date(dNow.setDate(dNow.getDate() - 1)).toLocaleDateString();
-            const tom = new Date(new Date().setDate(new Date().getDate() + 1)).toLocaleDateString();
+           const today = formatDate(dNow);
+            const yest = formatDate(new Date(dNow.setDate(dNow.getDate() - 1)));
+            const tom = formatDate(new Date(new Date().setDate(new Date().getDate() + 1)));
             const allowedDates = [today, yest, tom];
 
             let filterSel = document.getElementById('filterMilkMan');
