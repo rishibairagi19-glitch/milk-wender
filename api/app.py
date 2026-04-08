@@ -163,7 +163,7 @@ def login():
 
     # 🚀 SPEED FIX: Faltu heavy Base64 images aur passwords ko background list se hata diya
     u_cols = 'id, name, login_id, type, company, email, address, route, mobile, qr_code'
-    c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no'
+    c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no, seq_no_eve'
 
     user_to_return = user.copy()
     if role == 'Customer':
@@ -185,7 +185,7 @@ def sync_data():
     name = req_data.get('name')
     
     u_cols = 'id, name, login_id, type, company, email, address, route, mobile, qr_code'
-    c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no'
+    c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no, seq_no_eve'
 
     if role in ['Owner', 'Admin']:
         with ThreadPoolExecutor(max_workers=6) as executor:
@@ -422,4 +422,3 @@ if __name__ == '__main__':
     ensure_admin()
     print("Backend Chal Raha Hai... Browser Me Login Karein!")
     app.run(host='0.0.0.0', debug=True, port=5000)
-                                                     
