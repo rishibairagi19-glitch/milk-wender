@@ -1,5 +1,6 @@
 Flask
 Flask-Cors
 supabase
+python-dotenv
 Werkzeug
 gunicorn
