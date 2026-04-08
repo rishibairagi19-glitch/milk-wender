@@ -2522,7 +2522,7 @@
                 return;
             }
             
-            const dateStr = selectedDate.toLocaleDateString();
+            const dateStr = convertToDDMMYYYY(dateEl.value);
 
             const custObj = customers.find(c => c.cid === currentUser.login_id);
             if (!custObj) {
@@ -2576,7 +2576,7 @@
             btn.innerText = "Saving..."; btn.disabled = true;
             const dateEl = document.getElementById('tempChangeDate');
             const shift = document.getElementById('tempChangeShift').value;
-            const dateStr = new Date(dateEl.value).toLocaleDateString();
+            const dateStr = convertToDDMMYYYY(dateEl.value);
             const custObj = customers.find(c => c.cid === currentUser.login_id);
 
             let defItems = getCustItems(custObj);
@@ -2686,7 +2686,7 @@
         }
         function setFeedDate(offset) {
             let d = new Date(); d.setDate(d.getDate() + offset);
-            currentFeedDateStr = d.toLocaleDateString();
+            currentFeedDateStr = formatDate(d);
             currentFeedOffset = offset;
             
             document.getElementById('btnDateToday').classList.toggle('active-tab', offset === 0);
@@ -2700,7 +2700,7 @@
             if(!val) return;
             let parts = val.split('-');
             let d = new Date(parts[0], parts[1]-1, parts[2]);
-            currentFeedDateStr = d.toLocaleDateString();
+            currentFeedDateStr = convertToDDMMYYYY(val);
             
             let today = new Date(); today.setHours(0,0,0,0);
             d.setHours(0,0,0,0);
