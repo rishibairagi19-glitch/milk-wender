@@ -418,11 +418,12 @@
     <div id="general-bill-view" class="container hidden">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h2>🧾 General Bills</h2>
-            <div><button id="tabGbNew" class="btn-tab active-tab" onclick="switchGbTab('new')">➕ New Bill</button><button id="tabGbOld" class="btn-tab" onclick="switchGbTab('old')">📋 Old Bills</button></div>
+            <div><button id="tabGbNew" class="btn-tab active-tab" onclick="clearGbForm(); switchGbTab('new')">➕ New Bill</button><button id="tabGbOld" class="btn-tab" onclick="switchGbTab('old')">📋 Old Bills</button></div>
         </div>
 
         <div id="gb-tab-new">
             <div class="grid-form">
+                <input type="hidden" id="editGbIdx">
                 <input type="date" id="gbDate" required>
                 <input type="text" id="gbCustName" placeholder="Customer Name" required>
                 <input type="text" id="gbMobile" placeholder="Mobile Number (Optional)" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
@@ -437,10 +438,17 @@
                 </div>
                 
                 <h4 style="margin-top:20px; margin-bottom:10px; color:var(--primary); font-size:14px; border-top: 1px dashed #475569; padding-top: 15px;">📋 Added Items</h4>
-                <ul id="gbItemList" style="margin: 0; padding-left: 0; list-style-type: none; font-size: 14px; color: var(--text);"></ul>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; text-align:left; font-size:13px; margin:0; border-collapse:collapse;">
+                        <thead><tr style="border-bottom:1px solid #475569; color:#94a3b8;">
+                            <th style="padding:5px;">Item</th><th style="padding:5px;">Qty</th><th style="padding:5px;">Rate (₹)</th><th style="padding:5px;">Total</th><th style="padding:5px;">Act</th>
+                        </tr></thead>
+                        <tbody id="gbItemList"></tbody>
+                    </table>
+                </div>
                 <div id="gbTotalDisplay" style="font-weight:bold; color:var(--success); margin-top:15px; font-size:18px; text-align:right;">Total: ₹0</div>
             </div>
-            <button class="btn-save" style="margin-top:20px; font-size: 16px; padding: 12px;" onclick="saveGeneralBill()">Generate & Print Bill</button>
+            <button id="btnSaveGbMain" class="btn-save" style="margin-top:20px; font-size: 16px; padding: 12px;" onclick="saveGeneralBill()">Generate & Print Bill</button>
         </div>
 
         <div id="gb-tab-old" class="hidden">
@@ -1566,13 +1574,8 @@
             if(id === 'owner-master') { renderOwners(); }
             
             if(id === 'general-bill-view') {
+                clearGbForm();
                 switchGbTab('new');
-                const dObj = new Date();
-                document.getElementById('gbDate').value = dObj.toISOString().split('T')[0];
-                document.getElementById('gbCustName').value = '';
-                document.getElementById('gbMobile').value = '';
-                currentGbItems = [];
-                renderGbItems();
                 
                 let itemSelect = document.getElementById('gbItemAdd');
                 itemSelect.innerHTML = '<option value="">-- Select Product --</option>';
@@ -1757,18 +1760,34 @@
             if(tab === 'old') renderGeneralBills();
         }
 
+        function clearGbForm() {
+            if(document.getElementById('editGbIdx')) document.getElementById('editGbIdx').value = "";
+            if(document.getElementById('btnSaveGbMain')) document.getElementById('btnSaveGbMain').innerText = "Generate & Print Bill";
+            const dObj = new Date();
+            if(document.getElementById('gbDate')) document.getElementById('gbDate').value = dObj.toISOString().split('T')[0];
+            if(document.getElementById('gbCustName')) document.getElementById('gbCustName').value = '';
+            if(document.getElementById('gbMobile')) document.getElementById('gbMobile').value = '';
+            currentGbItems = [];
+            renderGbItems();
+        }
+
         let currentGbItems = [];
         
         function renderGbItems() {
-            const ul = document.getElementById('gbItemList');
+            const tbody = document.getElementById('gbItemList');
             let html = '';
             let grandTotal = 0;
             currentGbItems.forEach((d, i) => {
                 grandTotal += d.total;
-                html += `<li style="margin-bottom:5px;"><b>${d.item}</b> : ${d.qty} x ₹${d.rate} = <b>₹${d.total.toFixed(2)}</b> 
-                <button type="button" class="badge" style="background:var(--danger); margin-left: 10px;" onclick="removeGbItem(${i})">X</button></li>`;
+                html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:8px 5px;"><b>${d.item}</b></td>
+                    <td style="padding:8px 5px;">${d.qty}</td>
+                    <td style="padding:8px 5px;">₹${d.rate}</td>
+                    <td style="padding:8px 5px; color:var(--success); font-weight:bold;">₹${d.total.toFixed(2)}</td>
+                    <td style="padding:8px 5px;"><button type="button" class="badge" style="background:var(--danger);" onclick="removeGbItem(${i})">X</button></td>
+                </tr>`;
             });
-            if(ul) ul.innerHTML = html;
+            if(tbody) tbody.innerHTML = html;
             document.getElementById('gbTotalDisplay').innerText = `Total: ₹${grandTotal.toFixed(2)}`;
         }
 
@@ -1815,23 +1834,21 @@
                 }
             });
             
-            gbDisplayList.forEach((item, index) => {
-                item.serial = index + 1;
-            });
-            
-            gbDisplayList.reverse().forEach(({ t, realIdx, serial }) => {
+            gbDisplayList.reverse().forEach(({ t, realIdx }) => {
                 if (filterDateStr && t.date !== filterDateStr) return;
                 
                 totalAmt += parseFloat(t.total || 0);
                 
                 let displayItem = formatItemDisplay(t.item);
+                let billNo = t.id || (realIdx + 1);
                 
                 html += `<tr>
-                    <td><b>GB-${serial}</b><br><span style="font-size:11px; color:#94a3b8;">${t.date}</span></td>
+                    <td><b>GB-${billNo}</b><br><span style="font-size:11px; color:#94a3b8;">${t.date}</span></td>
                     <td>${t.cust}</td>
                     <td>${displayItem}</td>
                     <td style="color:var(--success); font-weight:bold;">₹${t.total}</td>
                     <td>
+                        <button class="badge" style="background:var(--warning); color:black" onclick="editGb(${realIdx})">Edit</button>
                         <button class="badge" style="background:#4f46e5; color:white" onclick="reprintGb(${realIdx})">Print</button>
                         <button class="badge" style="background:var(--danger)" onclick="deleteItem(${realIdx}, 'trans')">Del</button>
                     </td>
@@ -1852,15 +1869,41 @@
                 itemsArr = [{ item: t.item, qty: t.qty, rate: t.rate, total: t.total }];
             }
             
-            let gbTransactions = transactions.filter(tx => tx.shift === 'General Bill');
-            let serialNo = gbTransactions.findIndex(tx => tx.id === t.id) + 1;
+            let serialNo = t.id || (idx + 1);
+            let mobileNum = (t.qty !== '-' && t.qty) ? t.qty : '';
 
-            printBillHTML(serialNo, t.date, t.cust, "", itemsArr, parseFloat(t.total));
+            printBillHTML(serialNo, t.date, t.cust, mobileNum, itemsArr, parseFloat(t.total));
+        }
+
+        function editGb(idx) {
+            const t = transactions[idx];
+            document.getElementById('editGbIdx').value = idx;
+            
+            let dObj = new Date(t.date);
+            if (isNaN(dObj) && t.date.includes('/')) {
+                let p = t.date.split('/');
+                dObj = new Date(`${p[2]}-${p[1]}-${p[0]}`);
+            }
+            if(!isNaN(dObj)) document.getElementById('gbDate').value = dObj.toISOString().split('T')[0];
+            
+            document.getElementById('gbCustName').value = t.cust;
+            document.getElementById('gbMobile').value = (t.qty !== '-' && t.qty) ? t.qty : '';
+            
+            try {
+                currentGbItems = JSON.parse(t.item);
+            } catch(e) {
+                currentGbItems = [{ item: t.item, qty: t.qty, rate: t.rate, total: t.total }];
+            }
+            
+            renderGbItems();
+            switchGbTab('new');
+            document.getElementById('btnSaveGbMain').innerText = "Update & Print Bill";
         }
 
         async function saveGeneralBill() {
             if(!validateForm('gb-tab-new')) return;
             
+            const editIdx = document.getElementById('editGbIdx').value;
             const dateVal = document.getElementById('gbDate').value;
             if(!dateVal) return alert("Please select a date!");
             
@@ -1874,27 +1917,31 @@
             
             let grandTotal = currentGbItems.reduce((sum, i) => sum + i.total, 0);
 
-            let data = { date: dateStr, cust: custName, item: JSON.stringify(currentGbItems), qty: '-', rate: grandTotal, total: grandTotal, company: currentUser.company, shift: shift };
+            let data = { date: dateStr, cust: custName, item: JSON.stringify(currentGbItems), qty: mobileNum || '-', rate: grandTotal, total: grandTotal, company: currentUser.company, shift: shift };
+            if(editIdx !== "") data.id = transactions[editIdx].id;
 
-            const btn = event.target; btn.innerText = "Saving...";
+            const btn = document.getElementById('btnSaveGbMain'); btn.innerText = "Saving...";
             try {
                 const res = await fetch(`${API_BASE}/transactions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
                 const savedData = await res.json();
-                transactions.push(savedData);
+                if(editIdx !== "") { transactions[editIdx] = savedData; } else { transactions.push(savedData); }
                 renderGeneralBills(); 
-                alert("General Bill Created Successfully!");
+                alert(editIdx !== "" ? "General Bill Updated Successfully!" : "General Bill Created Successfully!");
                 
-                let gbTransactions = transactions.filter(t => t.shift === 'General Bill');
-                let serialNo = gbTransactions.length;
+                let serialNo = savedData.id || Math.floor(Math.random() * 9000 + 1000);
                 
                 printBillHTML(serialNo, dateStr, custName, mobileNum, currentGbItems, grandTotal);
+                clearGbForm();
+                
                 switchGbTab('old'); // Switch to old bills tab automatically
             } catch(e) { alert("Network Error!"); }
-            btn.innerText = "Generate & Print Bill";
+            btn.innerText = editIdx !== "" ? "Update & Print Bill" : "Generate & Print Bill";
         }
         
         function printBillHTML(serialNo, dateStr, custName, mobileNum, itemsArr, total) {
             let companyName = currentUser.company && currentUser.company !== 'Default' ? currentUser.company : 'Dairy Ledger';
+            let ownerAddress = currentUser.address || currentUser.addr || '';
+            let ownerMobile = currentUser.mobile || '';
                 let printHtml = `<html><head><title>Cash Memo</title><style>
                     body { font-family: sans-serif; padding: 20px; color: black; max-width: 400px; margin: auto; }
                     h2, h4 { text-align: center; margin: 5px 0; }
@@ -1907,6 +1954,8 @@
                         <button onclick="window.print()" style="padding:8px 15px; background:#4f46e5; color:white; border:none; border-radius:6px; font-size:14px; cursor:pointer;">🖨️ Print Receipt</button>
                     </div>
                     <h2>${companyName.toUpperCase()}</h2>
+                    ${ownerAddress ? `<p style="text-align:center; margin:2px 0; font-size:12px;">${ownerAddress}</p>` : ''}
+                    ${ownerMobile ? `<p style="text-align:center; margin:2px 0 10px 0; font-size:12px;"><b>Mob:</b> ${ownerMobile}</p>` : ''}
                     <h4>General Bill / Cash Memo</h4>
                     <hr>
                 <p style="margin:5px 0; font-size:14px;"><b>Bill No:</b> GB-${serialNo}</p>
@@ -3362,7 +3411,11 @@
             printWindow.document.write('</div>');
 
             let companyName = currentUser.company && currentUser.company !== 'Default' ? currentUser.company : 'Dairy Ledger';
+            let ownerAddress = currentUser.address || currentUser.addr || '';
+            let ownerMobile = currentUser.mobile || '';
             printWindow.document.write('<h2>' + companyName.toUpperCase() + '</h2>');
+            if (ownerAddress) printWindow.document.write('<p style="text-align:center; margin:2px 0; font-size:14px;">' + ownerAddress + '</p>');
+            if (ownerMobile) printWindow.document.write('<p style="text-align:center; margin:2px 0 15px 0; font-size:14px;"><b>Mob:</b> ' + ownerMobile + '</p>');
             printWindow.document.write('<h3>Customer Statement : ' + custName + ' (' + monthName + ')</h3>');
             
             let cleanContent = printContent.replace(/color:var\(--success\)/g, 'color:green; font-weight:bold;')
