@@ -1473,7 +1473,7 @@
 
             const isPreLogin = ['landing-page', 'login-page', 'register-page'].includes(id);
             document.getElementById('app-header').classList.toggle('hidden', isPreLogin);
-            document.body.style.paddingTop = isPreLogin ? '20px' : '80px';
+            document.body.style.paddingTop = isPreLogin ? '20px' : '95px';
 
             let homeId = 'main-menu';
             if(currentUser) { if(currentUser.type === 'Milk Man') homeId = 'ledger-master'; else if(currentUser.type === 'Customer') homeId = 'customer-self-view'; }
