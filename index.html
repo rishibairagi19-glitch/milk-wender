@@ -1129,7 +1129,6 @@
         function handleQrCodePic(e) {
             const file = e.target.files[0];
             if(!file) return;
-            if (!file) return;
 
             const reader = new FileReader();
             reader.onload = function(evt) {
@@ -1185,7 +1184,7 @@
 
         async function saveProfile() {
             if (!validateForm('profile-view')) return;
-            let btn = event.target; btn.innerText = "Updating...";
+            let btn = document.getElementById('btnSaveProfile'); if(btn) btn.innerText = "Updating...";
             let data = { ...currentUser };
             data.username = document.getElementById('profUsername').value.trim();
             data.name = document.getElementById('profName').value;
@@ -1246,9 +1245,8 @@
                 
                 alert("Profile Updated Successfully!");
                 setupUI(); showView('main-menu');
-                setupUI(); showView('profile-view');
             } catch(e) { alert("Error saving profile!"); }
-            btn.innerText = "Update Profile";
+            if(btn) btn.innerText = "Update Profile";
         }
 
         function enableProfileEdit() {
@@ -1871,7 +1869,7 @@
         function renderGeneralBills() {
             const tbody = document.getElementById('gbTableBody');
             const filterDateVal = document.getElementById('gbFilterDate').value;
-            let filterDateStr = filterDateVal ? new Date(filterDateVal).toLocaleDateString() : null;
+            let filterDateStr = filterDateVal ? convertToDDMMYYYY(filterDateVal) : null;
             
             let html = '';
             let totalAmt = 0;
@@ -2078,14 +2076,14 @@
             const qty = document.getElementById('reqQty').value;
             if(!date || !qty) return alert("Please enter Date and Requirement!");
             
-            const btn = event.target; btn.innerText = "Sending...";
+            const btn = window.event ? window.event.target : null; if(btn) btn.innerText = "Sending...";
             let data = {
                 cust_id: currentUser.login_id, cust_name: currentUser.name, req_date: date, req_qty: qty,
                 company: currentUser.company, milkman_id: customers.find(c => c.cid === currentUser.login_id)?.milkman_id || ''
             };
             const res = await fetch(`${API_BASE}/requests`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
             requests.push(await res.json());
-            document.getElementById('reqDate').value = ""; document.getElementById('reqQty').value = ""; btn.innerText = "Send Request";
+            document.getElementById('reqDate').value = ""; document.getElementById('reqQty').value = ""; if(btn) btn.innerText = "Send Request";
             renderCustomerRequests(); alert("Request sent successfully!");
         }
 
@@ -2120,7 +2118,8 @@
                 try { screenshotData = await toBase64(fileInput.files[0]); } catch (e) { return alert("Error reading screenshot file."); }
                 details.screenshot = screenshotData;
             }
-            const btn = event.target; btn.innerText = "Submitting..."; btn.disabled = true;
+            const btn = window.event ? window.event.target : null; 
+            if(btn) { btn.innerText = "Submitting..."; btn.disabled = true; }
             let data = { cust_id: currentUser.login_id, cust_name: currentUser.name, req_date: requestDate, req_qty: `Payment of ₹${amount} via ${method}`, type: 'Payment', details: JSON.stringify({ amount, method, ...details }), company: currentUser.company, milkman_id: customers.find(c => c.cid === currentUser.login_id)?.milkman_id || '' };
             try {
                 const res = await fetch(`${API_BASE}/requests`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
@@ -2129,7 +2128,7 @@
                 document.getElementById('payAmount').value = ''; document.getElementById('payCashTo').value = ''; document.getElementById('payScreenshot').value = '';
                 renderCustomerRequests();
             } catch (e) { alert("Error submitting payment. Please try again."); }
-            btn.innerText = "Submit Payment"; btn.disabled = false;
+            if(btn) { btn.innerText = "Submit Payment"; btn.disabled = false; }
         }
 
         function populateRouteDropdown(skipUserId = null) {
@@ -2356,7 +2355,7 @@
             
             const dNow = new Date();
            const today = formatDate(dNow);
-            const yest = formatDate(new Date(dNow.setDate(dNow.getDate() - 1)));
+            const yest = formatDate(new Date(new Date().setDate(new Date().getDate() - 1)));
             const tom = formatDate(new Date(new Date().setDate(new Date().getDate() + 1)));
             const allowedDates = [today, yest, tom];
 
@@ -2494,10 +2493,10 @@
             items.push({ item, qty, rate });
             
             custObj.defItem = JSON.stringify(items);
-            const btn = event.target; btn.innerText = "...";
+            const btn = window.event ? window.event.target : null; if(btn) btn.innerText = "...";
             await fetch(`${API_BASE}/customers`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(custObj) });
             document.getElementById('selfQtyAdd').value = ''; document.getElementById('selfItemAdd').value = ''; document.getElementById('selfRateAdd').value = '';
-            btn.innerText = "Add / Update";
+            if(btn) btn.innerText = "Add / Update";
             renderSelfCustItems();
         }
         
@@ -2734,7 +2733,10 @@
             transactions.forEach(t => {
                 if (t.shift === 'General Bill') return; // Hide General Bills
                 if (t.date === currentFeedDateStr && t.company === currentUser.company && (t.shift === currentFeedShift || !t.shift)) {
-                    doneToday.set(t.cust, t);
+                    let entry = doneToday.get(t.cust) || { itemsTrans: null, payTrans: null };
+                    if (t.item === 'Payment') entry.payTrans = t;
+                    else entry.itemsTrans = t;
+                    doneToday.set(t.cust, entry);
                 }
             });
 
@@ -2746,13 +2748,13 @@
                 if (selectedMM && c.milkman_id !== selectedMM) return;
                 if (c.shift !== currentFeedShift && c.shift !== 'Both') return; // Filter By Shift
                 
-                let trans = doneToday.get(c.name);
+                let entry = doneToday.get(c.name);
                 
-                if (trans && currentFeedOffset <= 0) {
+                if (entry && currentFeedOffset <= 0) {
                     completed.push({c, i});
-                    if (trans.item !== 'Payment') {
+                    if (entry.itemsTrans) {
                         try {
-                            let items = JSON.parse(trans.item);
+                            let items = JSON.parse(entry.itemsTrans.item);
                             if (Array.isArray(items)) {
                                 items.forEach(it => {
                                     if(!itemsToCarry[it.item]) itemsToCarry[it.item] = 0;
@@ -2760,12 +2762,12 @@
                                 });
                             }
                         } catch(e) {
-                            if(!itemsToCarry[trans.item]) itemsToCarry[trans.item] = 0;
-                            itemsToCarry[trans.item] += parseFloat(trans.qty || 0);
+                            if(!itemsToCarry[entry.itemsTrans.item]) itemsToCarry[entry.itemsTrans.item] = 0;
+                            itemsToCarry[entry.itemsTrans.item] += parseFloat(entry.itemsTrans.qty || 0);
                         }
                     }
                 } else {
-                    pending.push({c, i, trans});
+                    pending.push({c, i, entry});
                     let defItems = getCustItems(c);
                     defItems.forEach(di => {
                         if(!itemsToCarry[di.item]) itemsToCarry[di.item] = 0;
@@ -2799,7 +2801,7 @@
                 
                 let defItems = getCustItems(c);
                 let itemsHtml = defItems.map((d, itemIdx) => {
-                    let preFillQty = trans ? (savedItemsMap[d.item] !== undefined ? savedItemsMap[d.item] : '') : (d.qty || '');
+                        let preFillQty = (entry && entry.itemsTrans) ? (savedItemsMap[d.item] !== undefined ? savedItemsMap[d.item] : '') : (d.qty || '');
                     return `
                     <div style="background:rgba(255,255,255,0.05); padding:5px 10px; border-radius:6px; display:flex; align-items:center; gap:8px;">
                         <span style="font-size:12px; width:70px; font-weight:bold;">${d.item}</span>
@@ -2833,9 +2835,9 @@
                 if (isOld) {
                     html += `<div style="text-align:center; font-size:12px; color:var(--warning); margin-top:5px; padding:8px; border:1px dashed var(--warning); border-radius:6px;">⚠️ Locked for past dates. Contact Owner to edit.</div>`;
                 } else if (currentFeedOffset > 0) {
-                    let btnTxt = trans ? "Update Pre-order 📅" : "Save Pre-order 📅";
-                    let bgBtn = trans ? "var(--warning)" : "var(--primary)";
-                    let colBtn = trans ? "black" : "white";
+                        let btnTxt = entry ? "Update Pre-order 📅" : "Save Pre-order 📅";
+                        let bgBtn = entry ? "var(--warning)" : "var(--primary)";
+                        let colBtn = entry ? "black" : "white";
                     html += `<button class="btn-save" style="width:100%; padding:10px; font-size:14px; margin-top:5px; background:${bgBtn}; color:${colBtn};" onclick="saveFeedEntry(${i}, this)">${btnTxt}</button>`;
                 } else {
                     html += `<button class="btn-save" style="width:100%; padding:10px; font-size:14px; margin-top:5px;" onclick="saveFeedEntry(${i}, this)">Done / Update ✔</button>`;
@@ -2877,11 +2879,11 @@
                         });
                     }
                 } catch(e) {
-                    if(!deliveredItems[trans.item]) deliveredItems[trans.item] = 0;
-                    if(!deliveredAmount[trans.item]) deliveredAmount[trans.item] = 0;
-                    deliveredItems[trans.item] += parseFloat(trans.qty || 0);
-                    deliveredAmount[trans.item] += parseFloat(trans.total || 0);
-                    cDelivered += parseFloat(trans.qty || 0);
+                        if(!deliveredItems[entry.itemsTrans.item]) deliveredItems[entry.itemsTrans.item] = 0;
+                        if(!deliveredAmount[entry.itemsTrans.item]) deliveredAmount[entry.itemsTrans.item] = 0;
+                        deliveredItems[entry.itemsTrans.item] += parseFloat(entry.itemsTrans.qty || 0);
+                        deliveredAmount[entry.itemsTrans.item] += parseFloat(entry.itemsTrans.total || 0);
+                        cDelivered += parseFloat(entry.itemsTrans.qty || 0);
                 }
                 
                 if (cTarget > 0 && cDelivered === 0) {
@@ -3033,9 +3035,10 @@
             });
             
             if(promises.length > 0) {
-                let btn = event.target; btn.innerText = "Saving...";
+                let btn = window.event ? window.event.target : null; 
+                if(btn) btn.innerText = "Saving...";
                 await Promise.all(promises);
-                btn.innerText = "Update & Save";
+                if(btn) btn.innerText = "Update & Save";
                 renderTransFeed();
                 if(document.getElementById('ledger-master').classList.contains('hidden') === false && currentUser.type !== 'Milk Man') { renderCustomers(); }
             }
@@ -3288,7 +3291,7 @@
                     let p0 = parseInt(p[0]), p1 = parseInt(p[1]);
                     if(p0 > 12) return { year: parseInt(p[2]), month: p1 };
                     else if(p1 > 12) return { year: parseInt(p[2]), month: p0 };
-                    else return { year: parseInt(p[2]), month: p0 };
+                        else return { year: parseInt(p[2]), month: p1 };
                 } else return { year: parseInt(p[0]), month: parseInt(p[1]) };
             }
             let d = new Date(dStr);
@@ -3296,9 +3299,14 @@
         }
 
         async function buildStatementHTML(custName, company, reportMonth, reportYear) {
-            const openingBalanceResponse = await fetch(`${API_BASE}/opening_balance?cust_name=${encodeURIComponent(custName)}&company=${encodeURIComponent(company)}&month=${reportMonth}&year=${reportYear}`);
-            const openingBalanceData = await openingBalanceResponse.json();
-            let openingBalance = openingBalanceData.opening_balance;
+            let openingBalance = 0;
+            try {
+                const openingBalanceResponse = await fetch(`${API_BASE}/opening_balance?cust_name=${encodeURIComponent(custName)}&company=${encodeURIComponent(company)}&month=${reportMonth}&year=${reportYear}`);
+                const openingBalanceData = await openingBalanceResponse.json();
+                openingBalance = openingBalanceData.opening_balance || 0;
+            } catch (e) {
+                console.error("Error fetching opening balance:", e);
+            }
 
             let currentMonthPurchases = 0;
             let currentMonthPaid = 0;
