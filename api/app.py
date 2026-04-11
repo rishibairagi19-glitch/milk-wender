@@ -6,6 +6,7 @@ from supabase import create_client, Client
 from werkzeug.security import generate_password_hash, check_password_hash
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
+import datetime
 
 load_dotenv()
 
@@ -130,9 +131,9 @@ def login():
 
     try:
         if role == 'Customer':
-            or_cond = f"{id_field}.ilike.{login_id},username.ilike.{login_id},mobile.eq.{login_id}"
+            or_cond = f'{id_field}.ilike."{login_id}",username.ilike."{login_id}",mobile.eq."{login_id}"'
         else:
-            or_cond = f"{id_field}.ilike.{login_id},username.ilike.{login_id},mobile.eq.{login_id},email.ilike.{login_id}"
+            or_cond = f'{id_field}.ilike."{login_id}",username.ilike."{login_id}",mobile.eq."{login_id}",email.ilike."{login_id}"'
         user_res = supabase.table(table).select('*').or_(or_cond).execute()
         user = user_res.data[0] if user_res.data else None
     except Exception as e:
@@ -187,6 +188,13 @@ def sync_data():
     u_cols = 'id, name, login_id, type, company, email, address, route, mobile, qr_code'
     c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no, seq_no_eve'
 
+    def safe_get(f):
+        try:
+            return f.result()
+        except Exception as e:
+            print("Sync Error:", e)
+            return []
+
     if role in ['Owner', 'Admin']:
         with ThreadPoolExecutor(max_workers=6) as executor:
             if company == 'SuperAdmin':
@@ -203,7 +211,7 @@ def sync_data():
                 f_p = executor.submit(lambda: supabase.table('sys_products').select('*').eq('company', company).execute().data)
                 f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('company', company).order('id', desc=True).limit(50).execute().data)
                 f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').eq('company', company).execute().data)
-        return jsonify({"success": True, "data": {"users": f_u.result(), "customers": f_c.result(), "transactions": f_t.result(), "products": f_p.result(), "requests": f_r.result(), "routes": f_ro.result()}})
+        return jsonify({"success": True, "data": {"users": safe_get(f_u), "customers": safe_get(f_c), "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro)}})
         
     elif role == 'Milk Man':
         milkman_customers_res = supabase.table('sys_customers').select(c_cols).eq('company', company).eq('milkman_id', login_id).execute()
@@ -218,7 +226,7 @@ def sync_data():
             f_p = executor.submit(lambda: supabase.table('sys_products').select('*').eq('company', company).execute().data)
             f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('company', company).eq('milkman_id', login_id).order('id', desc=True).limit(50).execute().data)
             f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').eq('company', company).execute().data)
-        return jsonify({"success": True, "data": {"users": [], "customers": milkman_customers, "transactions": f_t.result(), "products": f_p.result(), "requests": f_r.result(), "routes": f_ro.result()}})
+        return jsonify({"success": True, "data": {"users": [], "customers": milkman_customers, "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro)}})
         
     elif role == 'Customer':
         with ThreadPoolExecutor(max_workers=5) as executor:
@@ -227,7 +235,7 @@ def sync_data():
             f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('cust_id', login_id).eq('company', company).order('id', desc=True).limit(20).execute().data)
             f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').eq('company', company).execute().data)
             f_u = executor.submit(lambda: supabase.table('sys_users').select(u_cols).eq('company', company).execute().data)
-        return jsonify({"success": True, "data": {"users": f_u.result(), "customers": [], "transactions": f_t.result(), "products": f_p.result(), "requests": f_r.result(), "routes": f_ro.result()}})
+        return jsonify({"success": True, "data": {"users": safe_get(f_u), "customers": [], "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro)}})
     return jsonify({"success": False})
 
 
@@ -252,16 +260,16 @@ def save_data(table_name):
         
         # 🚀 SPEED FIX: Combine 4 queries into 1 query
         or_conditions = []
-        if username: or_conditions.append(f"username.ilike.{username}")
-        if user_type and mobile: or_conditions.append(f"mobile.eq.{mobile}")
-        if user_type and email: or_conditions.append(f"email.eq.{email}")
+        if username: or_conditions.append(f'username.ilike."{username}"')
+        if user_type and mobile: or_conditions.append(f'mobile.eq."{mobile}"')
+        if user_type and email: or_conditions.append(f'email.eq."{email}"')
 
         if or_conditions:
             q = supabase.table('sys_users').select('id, username, mobile, email, type').or_(",".join(or_conditions))
             if item_id_val: q = q.neq('id', item_id_val)
             duplicates = q.execute().data
             for d in duplicates:
-                if username and d.get('username', '').lower() == username.lower():
+                if username and (d.get('username') or '').lower() == username.lower():
                     return jsonify({"success": False, "message": f"Username '{username}' is already taken!"})
                 if user_type and d.get('type') == user_type:
                     if mobile and d.get('mobile') == mobile: return jsonify({"success": False, "message": f"Mobile already registered as {user_type}!"})
@@ -276,15 +284,15 @@ def save_data(table_name):
         
         # 🚀 SPEED FIX: Combine queries
         or_conditions = []
-        if username: or_conditions.append(f"username.ilike.{username}")
-        if mobile: or_conditions.append(f"mobile.eq.{mobile}")
+        if username: or_conditions.append(f'username.ilike."{username}"')
+        if mobile: or_conditions.append(f'mobile.eq."{mobile}"')
         
         if or_conditions:
             q = supabase.table('sys_customers').select('id, username, mobile').or_(",".join(or_conditions))
             if item_id_val: q = q.neq('id', item_id_val)
             duplicates = q.execute().data
             for d in duplicates:
-                if username and d.get('username', '').lower() == username.lower():
+                if username and (d.get('username') or '').lower() == username.lower():
                     return jsonify({"success": False, "message": f"Username '{username}' is already taken!"})
                 if mobile and d.get('mobile') == mobile:
                     return jsonify({"success": False, "message": "This mobile number is already registered as a Customer!"})
@@ -318,10 +326,10 @@ def save_data(table_name):
                 req_data = req_res.data[0]
                 try:
                     nums = re.findall(r'\d+\.?\d*', str(req_data.get('req_qty', '0')))
-                    payment_amount = float(nums[0]) if nums else float(req_data['req_qty'])
+                    payment_amount = float(nums[0]) if nums else 0.0
                     supabase.table('sys_trans').insert({
                         "date": req_data['req_date'], "cust": req_data['cust_name'], "item": 'Payment',
-                        "qty": 1, "rate": payment_amount, "total": payment_amount,
+                        "qty": '-', "rate": payment_amount, "total": payment_amount,
                         "company": req_data['company'], "shift": 'Morning'
                     }).execute()
                 except Exception: pass
@@ -344,6 +352,8 @@ def save_data(table_name):
 
     elif table_name == 'customers':
         milkman_id = data.get('milkman_id')
+        if not milkman_id:
+            return jsonify({"success": False, "message": "Milkman ID is required"}), 400
         res = supabase.table('sys_customers').select('id', count='exact').eq('milkman_id', milkman_id).execute()
         cust_count = res.count if res.count else 0
         data['cid'] = f"{milkman_id}{get_alphanumeric_sequence(cust_count, 2)}"
@@ -378,8 +388,12 @@ def delete_data(table_name, item_id):
 def get_opening_balance():
     cust_name = request.args.get('cust_name')
     company = request.args.get('company')
-    month = int(request.args.get('month'))
-    year = int(request.args.get('year'))
+    
+    try:
+        month = int(request.args.get('month', 0))
+        year = int(request.args.get('year', 0))
+    except (TypeError, ValueError):
+        return jsonify({"opening_balance": 0, "error": "Invalid month or year parameters"}), 400
 
     # Fetch all transactions to avoid string comparison issues with dates
     transactions_res = supabase.table('sys_trans').select('date, item, total, shift').eq('cust', cust_name).eq('company', company).neq('shift', 'General Bill').execute()
@@ -390,31 +404,25 @@ def get_opening_balance():
         d_str = str(t.get('date', '')).strip()
         t_year, t_month = 0, 0
         try:
-            if '-' in d_str:
-                parts = d_str.split('-')
-                if len(parts[0]) == 4:
-                    t_year, t_month = int(parts[0]), int(parts[1])
-                else:
-                    t_year, t_month = int(parts[2]), int(parts[1])
-            elif '/' in d_str:
-                parts = d_str.split('/')
-                if len(parts[2]) == 4:
-                    p0, p1 = int(parts[0]), int(parts[1])
-                    t_year = int(parts[2])
-                    if p0 > 12: t_month = p1
-                    elif p1 > 12: t_month = p0
-                    else: t_month = p0
-                else:
-                    t_year, t_month = int(parts[0]), int(parts[1])
+            if '-' in d_str or '/' in d_str:
+                parts = d_str.replace('/', '-').split('-')
+                if len(parts) == 3:
+                    if len(parts[0]) == 4:
+                        t_year, t_month = int(parts[0]), int(parts[1])
+                    else:
+                        t_year, t_month = int(parts[2]), int(parts[1])
+                elif len(parts) == 2:
+                    current_year = datetime.datetime.now().year
+                    t_year, t_month = current_year, int(parts[1])
         except Exception:
             continue
             
         if t_year > 0 and t_month > 0:
             if t_year < year or (t_year == year and t_month < month):
                 if t['item'] == 'Payment':
-                    opening_balance -= abs(float(t['total']))
+                    opening_balance -= abs(float(t.get('total') or 0))
                 else:
-                    opening_balance += float(t['total'])
+                    opening_balance += float(t.get('total') or 0)
     
     return jsonify({"opening_balance": opening_balance})
 
