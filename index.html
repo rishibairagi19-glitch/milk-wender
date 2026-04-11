@@ -3414,8 +3414,26 @@
                 } else {
                     currentMonthPurchases += parseFloat(t.total);
                     let displayItem = formatItemDisplay(t.item);
-                    let dispQty = String(t.item || '').startsWith('[') ? 'Mix' : (t.qty || '-');
-                    monthlyTransactionsHtml += `<tr style="animation-delay:${(tbIndex++) * 0.03}s"><td>${t.date}</td><td>${displayItem}</td><td>${dispQty}</td><td>-</td><td>₹${t.total}</td></tr>`;
+                    
+                    let dispQty = t.qty || '-';
+                    let dispRate = t.rate || '-';
+                    if (String(t.item || '').startsWith('[')) {
+                        try {
+                            let items = JSON.parse(t.item);
+                            if (Array.isArray(items)) {
+                                let tQty = 0;
+                                let tRates = [];
+                                items.forEach(i => {
+                                    tQty += parseFloat(i.qty || 0);
+                                    tRates.push(i.rate);
+                                });
+                                dispQty = tQty;
+                                dispRate = tRates.join(', ');
+                            }
+                        } catch(e) {}
+                    }
+                    
+                    monthlyTransactionsHtml += `<tr style="animation-delay:${(tbIndex++) * 0.03}s"><td>${t.date}</td><td>${displayItem}</td><td>${dispQty}</td><td>${dispRate}</td><td>₹${t.total}</td></tr>`;
                 }
             });
 
@@ -3534,13 +3552,15 @@
             const printWindow = window.open('', '', 'height=800,width=800');
             printWindow.document.write('<html><head><title>Statement_' + custName + '_' + monthVal + '</title>');
             printWindow.document.write('<style>');
-            printWindow.document.write('body { font-family: "Inter", sans-serif; padding: 30px; color: #000; background: #fff; }');
-            printWindow.document.write('table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }');
-            printWindow.document.write('th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }');
-            printWindow.document.write('th { background: #f4f4f5; text-transform: uppercase; font-size: 12px; }');
-            printWindow.document.write('h2 { color: #111; margin-bottom: 5px; text-align: center; }');
-            printWindow.document.write('h3 { color: #444; margin-top: 0; text-align: center; margin-bottom: 30px; border-bottom: 1px solid #ccc; padding-bottom: 10px;}');
-            printWindow.document.write('@media print { .no-print { display: none !important; } }');
+            printWindow.document.write('body { font-family: "Inter", sans-serif; padding: 10px 20px; color: #000; background: #fff; font-size: 12px; margin: 0; }');
+            printWindow.document.write('table { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 5px !important; font-size: 12px; }');
+            printWindow.document.write('th, td { border: 1px solid #555; padding: 4px 6px; text-align: left; line-height: 1.1; }');
+            printWindow.document.write('th { background: #f4f4f5; text-transform: uppercase; font-size: 11px; }');
+            printWindow.document.write('h2 { color: #111; margin-bottom: 2px; margin-top: 0; text-align: center; font-size: 18px; }');
+            printWindow.document.write('p { margin: 2px 0; font-size: 12px !important; }');
+            printWindow.document.write('h3 { color: #444; margin-top: 4px; text-align: center; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 5px; font-size: 14px;}');
+            printWindow.document.write('div[style*="border-top: 2px solid"] { padding: 6px 10px !important; margin-top: 5px !important; font-size: 12px !important; gap: 5px !important; }');
+            printWindow.document.write('@media print { .no-print { display: none !important; } @page { margin: 0.5cm; } }');
             printWindow.document.write('</style>');
             printWindow.document.write('</head><body>');
             
@@ -3554,7 +3574,7 @@
             printWindow.document.write('<h2>' + companyName.toUpperCase() + '</h2>');
             if (ownerAddress) printWindow.document.write('<p style="text-align:center; margin:2px 0; font-size:14px;">' + ownerAddress + '</p>');
             if (ownerMobile) printWindow.document.write('<p style="text-align:center; margin:2px 0 15px 0; font-size:14px;"><b>Mob:</b> ' + ownerMobile + '</p>');
-            printWindow.document.write('<h3>Invoice : ' + custName + ' (' + monthName + ')</h3>');
+            printWindow.document.write('<h3>Invoice / Statement : ' + custName + ' (' + monthName + ')</h3>');
             
             let cleanContent = printContent.replace(/color:var\(--success\)/g, 'color:green; font-weight:bold;')
                                            .replace(/color:var\(--danger\)/g, 'color:red; font-weight:bold;')
@@ -3563,7 +3583,7 @@
                                            .replace(/color:white;/g, 'color:black;');
             
             printWindow.document.write(cleanContent);
-            printWindow.document.write('<div style="margin-top:50px; text-align:right; font-weight:bold;">Authorized Signature / Stamp<br><br><br>_________________________</div>');
+            printWindow.document.write('<div style="margin-top:20px; text-align:right; font-weight:bold; font-size: 12px;">Authorized Signature / Stamp<br><br><br>_________________________</div>');
             printWindow.document.write('</body></html>');
             printWindow.document.close();
             printWindow.focus();
