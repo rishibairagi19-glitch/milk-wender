@@ -421,6 +421,7 @@
             <div id="trans-tab-all" class="hidden">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <h3 style="margin:0;">All Transactions</h3>
+                    <button class="btn-save" style="width:auto; padding:8px 15px;" onclick="openNewTransModal()">➕ New Entry</button>
                 </div>
                 <table><thead><tr><th>Date</th><th>Customer</th><th>Item</th><th>Total</th><th>Actions</th></tr></thead><tbody id="transTableBody"></tbody></table>
             </div>
@@ -639,13 +640,22 @@
 
     <!-- EDIT TRANS MODAL (REPLACES MANUAL ENTRY) -->
     <div id="editTransModal" class="hidden" style="position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10000; display:flex; justify-content:center; align-items:center; padding:20px;">
-        <div class="modal-box" style="background:var(--card); width:100%; max-width:500px; padding:20px; border-radius:12px; border:1px solid #475569;">
-            <h3 style="margin-top:0;">✏️ Edit Entry</h3>
-            <div class="grid-form" style="margin-top: 15px; margin-bottom: 0;">
+        <div class="modal-box" style="background:var(--card); width:100%; max-width:500px; padding:20px; border-radius:12px; border:1px solid #475569; max-height:90vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                <h3 id="transModalTitle" style="margin:0;">📝 Manual Entry</h3>
+                <button onclick="closeEditTransModal()" style="background:transparent; color:var(--danger); border:none; font-size:24px; cursor:pointer;">&times;</button>
+            </div>
+            
+            <div id="transTypeSelector" style="display:flex; gap:10px; margin-bottom:15px;">
+                <button id="btnTransTypeItems" class="btn-tab active-tab" onclick="switchTransModalType('Items')">🛒 Items</button>
+                <button id="btnTransTypePay" class="btn-tab" onclick="switchTransModalType('Payment')">💸 Payment</button>
+            </div>
+
+            <div class="grid-form" style="margin-top: 0; margin-bottom: 0;">
                 <input type="hidden" id="editTransIdx">
-                    <input type="text" id="tDateText" placeholder="Record Date" readonly style="opacity:0.7;">
-                    <input type="text" id="tCustName" placeholder="Customer Name" readonly style="opacity:0.7;">
-                    <input type="text" id="tShiftText" placeholder="Shift" readonly style="opacity:0.7;">
+                <input type="date" id="tDateText" placeholder="Record Date" required>
+                <select id="tCustSelect" required><option value="">-- Select Customer --</option></select>
+                <select id="tShiftText" required><option value="Morning">🌅 Morning</option><option value="Evening">🌃 Evening</option></select>
             </div>
                 
                 <div id="editTransItemsSection" style="margin-top: 15px;">
@@ -668,7 +678,7 @@
                 <div id="tTotalDisplay" style="display:flex; align-items:center; font-weight:bold; color:var(--success); margin-top:15px; font-size:18px;">Total: ₹0</div>
                 
             <div style="display:flex; gap:10px; margin-top:15px;">
-                <button id="btnTransSave" class="btn-save" onclick="saveTransaction()">Update Entry</button>
+                <button id="btnTransSave" class="btn-save" onclick="saveTransaction()">Save Entry</button>
                 <button class="btn-back" style="margin:0;" onclick="closeEditTransModal()">Cancel</button>
             </div>
         </div>
@@ -1765,21 +1775,65 @@
         }
 
         // --- TRANSACTION ---
-        async function saveTransaction() {
-            const btn = document.getElementById('btnTransSave');
-            btn.innerText = "Saving...";
-            const idx = document.getElementById('editTransIdx').value;
-            const t = transactions[idx];
+        function switchTransModalType(type) {
+            currentEditTransType = type;
+            document.getElementById('btnTransTypeItems').classList.toggle('active-tab', type === 'Items');
+            document.getElementById('btnTransTypePay').classList.toggle('active-tab', type === 'Payment');
             
-            let data = { ...t };
+            document.getElementById('editTransItemsSection').classList.toggle('hidden', type === 'Payment');
+            document.getElementById('editTransPaymentSection').classList.toggle('hidden', type === 'Items');
+            
+            if (type === 'Payment') {
+                document.getElementById('tTotalDisplay').innerText = 'Total: ₹' + (document.getElementById('tPaymentAmt').value || 0);
+            } else {
+                renderEditTransItems(); // Restores item total
+            }
+        }
+
+        function openNewTransModal() {
+            document.getElementById('transModalTitle').innerText = "➕ New Entry";
+            document.getElementById('editTransIdx').value = "";
+            document.getElementById('tDateText').value = new Date().toISOString().split('T')[0];
+            document.getElementById('tDateText').readOnly = false; document.getElementById('tDateText').style.opacity = "1";
+            
+            document.getElementById('tCustSelect').value = ""; document.getElementById('tCustSelect').disabled = false; document.getElementById('tCustSelect').style.opacity = "1";
+            document.getElementById('tShiftText').value = "Morning"; document.getElementById('tShiftText').disabled = false; document.getElementById('tShiftText').style.opacity = "1";
+
+            document.getElementById('btnTransSave').innerText = "Save Entry";
+            document.getElementById('tPaymentAmt').value = "";
+            
+            currentEditTransItems = [];
+            const select = document.getElementById('tItemAdd');
+            select.innerHTML = '<option value="">-- Select Product --</option>';
+            products.forEach(p => select.innerHTML += `<option value="${p.item_name}" data-rate="${p.rate}">${p.item_name} (${p.unit || '-'})</option>`);
+            
+            switchTransModalType('Items');
+            document.getElementById('editTransModal').classList.remove('hidden');
+        }
+
+        async function saveTransaction() {
+            if (!validateForm('editTransModal')) return;
+            const btn = document.getElementById('btnTransSave'); btn.innerText = "Saving...";
+            const idx = document.getElementById('editTransIdx').value;
+            
+            const dateVal = document.getElementById('tDateText').value;
+            if(!dateVal) { alert("Please select date"); btn.innerText = idx !== "" ? "Update Entry" : "Save Entry"; return; }
+            const dateStr = convertToDDMMYYYY(dateVal);
+            const custName = document.getElementById('tCustSelect').value;
+            if(!custName) { alert("Please select customer"); btn.innerText = idx !== "" ? "Update Entry" : "Save Entry"; return; }
+            const shift = document.getElementById('tShiftText').value;
+            
+            let data = idx !== "" ? { ...transactions[idx] } : { date: dateStr, cust: custName, shift: shift, company: currentUser.company };
             
             if (currentEditTransType === 'Payment') {
                 let amt = parseFloat(document.getElementById('tPaymentAmt').value) || 0;
-                if (amt <= 0) { alert("Enter valid amount"); btn.innerText = "Update Entry"; return; }
+                if (amt <= 0) { alert("Enter valid amount"); btn.innerText = idx !== "" ? "Update Entry" : "Save Entry"; return; }
+                data.item = 'Payment';
+                data.qty = '-';
                 data.rate = amt;
                 data.total = amt;
             } else {
-                if (currentEditTransItems.length === 0) { alert("Add at least one item!"); btn.innerText = "Update Entry"; return; }
+                if (currentEditTransItems.length === 0) { alert("Add at least one item!"); btn.innerText = idx !== "" ? "Update Entry" : "Save Entry"; return; }
                 data.item = JSON.stringify(currentEditTransItems);
                 data.qty = '-';
                 let gTotal = 0;
@@ -1791,11 +1845,13 @@
             try {
                 const res = await fetch(`${API_BASE}/transactions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
                 const savedData = await res.json();
-                transactions[idx] = savedData;
+                if(idx !== "") transactions[idx] = savedData;
+                else transactions.push(savedData);
                 renderTransFeed(); renderTrans();
                 closeEditTransModal();
+                alert(idx !== "" ? "Entry Updated Successfully!" : "New Entry Saved Successfully!");
             } catch(e) { alert("Network error!"); }
-            btn.innerText = "Update Entry";
+            btn.innerText = idx !== "" ? "Update Entry" : "Save Entry";
         }
 
         // --- GENERAL BILLS LOGIC (REPLACES MANUAL ENTRY) ---
@@ -2752,7 +2808,8 @@
             customers.forEach((c, i) => {
                 if (isMilkMan() && c.milkman_id !== currentUser.login_id) return;
                 if (selectedMM && c.milkman_id !== selectedMM) return;
-                if (c.shift !== currentFeedShift && c.shift !== 'Both') return; // Filter By Shift
+                let cShift = c.shift || 'Morning'; // Fallback for old data
+                if (cShift !== currentFeedShift && cShift !== 'Both') return; // Filter By Shift
                 
                 let entry = doneToday.get(c.name);
                 
@@ -3159,21 +3216,34 @@
         function editTrans(i) { 
             const t = transactions[i]; 
             document.getElementById('editTransIdx').value = i; 
+            document.getElementById('transModalTitle').innerText = "✏️ Edit Entry";
             
-            document.getElementById('tDateText').value = t.date;
-            document.getElementById('tCustName').value = t.cust;
+            let dObj = new Date(t.date);
+            if (isNaN(dObj) && (t.date.includes('/') || t.date.includes('-'))) {
+                let p = t.date.split(/[-/]/);
+                if (p.length === 3) {
+                    if (p[0].length === 4) dObj = new Date(`${p[0]}-${p[1]}-${p[2]}`);
+                    else dObj = new Date(`${p[2]}-${p[1]}-${p[0]}`);
+                }
+            }
+            if(!isNaN(dObj)) document.getElementById('tDateText').value = dObj.toISOString().split('T')[0];
+            else document.getElementById('tDateText').value = '';
+            
+            document.getElementById('tDateText').readOnly = true; document.getElementById('tDateText').style.opacity = "0.7";
+            
+            let custSelect = document.getElementById('tCustSelect');
+            if (!Array.from(custSelect.options).some(opt => opt.value === t.cust)) custSelect.innerHTML += `<option value="${t.cust}">${t.cust}</option>`;
+            custSelect.value = t.cust;
+            custSelect.disabled = true; custSelect.style.opacity = "0.7";
+            
             document.getElementById('tShiftText').value = t.shift || 'Morning';
+            document.getElementById('tShiftText').disabled = true; document.getElementById('tShiftText').style.opacity = "0.7";
             
             if(t.item === 'Payment') {
-                currentEditTransType = 'Payment';
-                document.getElementById('editTransItemsSection').classList.add('hidden');
-                document.getElementById('editTransPaymentSection').classList.remove('hidden');
+                switchTransModalType('Payment');
                 document.getElementById('tPaymentAmt').value = t.rate;
-                document.getElementById('tTotalDisplay').innerText = `Total: ₹${t.rate}`;
             } else {
-                currentEditTransType = 'Items';
-                document.getElementById('editTransItemsSection').classList.remove('hidden');
-                document.getElementById('editTransPaymentSection').classList.add('hidden');
+                switchTransModalType('Items');
                 
                 try {
                     currentEditTransItems = JSON.parse(t.item);
@@ -3188,6 +3258,7 @@
                 
                 renderEditTransItems();
             }
+            document.getElementById('btnTransSave').innerText = "Update Entry";
             
             document.getElementById('editTransModal').classList.remove('hidden');
         }
