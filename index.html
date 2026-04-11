@@ -3432,7 +3432,6 @@
 
             if (monthlyTransactionsHtml) {
                 html += `
-                    <h3 style="margin-bottom:10px; font-size: 16px;">Transactions for ${monthName}</h3>
                     <table style="margin-bottom: 20px;">
                         <thead>
                             <tr><th>Date</th><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr>
@@ -3449,7 +3448,7 @@
             html += `
                 <div style="margin-top: 15px; padding: 12px 10px; border-top: 2px solid var(--primary); border-bottom: 2px solid var(--primary); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; font-size: 14px; background: rgba(0,0,0,0.1);">
                     <span><b>Prev Bal:</b> <span style="color:${obColor}">${obText}</span></span>
-                    <span><b>+ New Bill:</b> <span style="color:var(--danger)">₹${currentMonthPurchases.toFixed(2)}</span></span>
+                    <span><b>+ Current Bill:</b> <span style="color:var(--danger)">₹${currentMonthPurchases.toFixed(2)}</span></span>
                     <span><b>- Paid:</b> <span style="color:var(--success)">₹${currentMonthPaid.toFixed(2)}</span></span>
                     <span style="font-size: 15px;"><b>Final Due:</b> <span style="color:${cbColor}; font-weight:bold;">${cbText}</span></span>
                 </div>
@@ -3555,7 +3554,7 @@
             printWindow.document.write('<h2>' + companyName.toUpperCase() + '</h2>');
             if (ownerAddress) printWindow.document.write('<p style="text-align:center; margin:2px 0; font-size:14px;">' + ownerAddress + '</p>');
             if (ownerMobile) printWindow.document.write('<p style="text-align:center; margin:2px 0 15px 0; font-size:14px;"><b>Mob:</b> ' + ownerMobile + '</p>');
-            printWindow.document.write('<h3>Customer Statement : ' + custName + ' (' + monthName + ')</h3>');
+            printWindow.document.write('<h3>Invoice / Statement : ' + custName + ' (' + monthName + ')</h3>');
             
             let cleanContent = printContent.replace(/color:var\(--success\)/g, 'color:green; font-weight:bold;')
                                            .replace(/color:var\(--danger\)/g, 'color:red; font-weight:bold;')
