@@ -3427,24 +3427,13 @@
             let cbText = closingBalance >= 0 ? `₹${closingBalance.toFixed(2)} (Due)` : `₹${Math.abs(closingBalance).toFixed(2)} (Advance)`;
             let cbColor = closingBalance > 0 ? 'var(--danger)' : (closingBalance < 0 ? 'var(--success)' : 'var(--text)');
 
-            let html = `
-                <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                    <h3 style="margin-bottom:10px; font-size: 16px;">Summary for ${new Date(reportYear, reportMonth - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
-                    <div class="summary-box" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; background:rgba(0,0,0,0.2); padding:15px; border-radius:10px; margin-bottom:15px; text-align:center;">
-                        <div class="summary-item"><b>Previous Balance</b><br><span style="color:${obColor}">${obText}</span></div>
-                        <div class="summary-item"><b>+ New Bill</b><br><span style="color:var(--danger)">₹${currentMonthPurchases.toFixed(2)}</span></div>
-                        <div class="summary-item"><b>- Paid</b><br><span style="color:var(--success)">₹${currentMonthPaid.toFixed(2)}</span></div>
-                    </div>
-                    <div style="display:flex; justify-content:center; background:rgba(0,0,0,0.2); padding:15px; border-radius:10px; text-align:center; font-size:18px;">
-                        <div><b>Final Closing Balance:</b> <span style="color:${cbColor}">${cbText}</span></div>
-                    </div>
-                </div>
-                `;
+            let monthName = new Date(reportYear, reportMonth - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+            let html = '';
 
             if (monthlyTransactionsHtml) {
                 html += `
-                    <h3 style="margin-bottom:10px; font-size: 16px;">Transactions for ${new Date(reportYear, reportMonth - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
-                    <table>
+                    <h3 style="margin-bottom:10px; font-size: 16px;">Transactions for ${monthName}</h3>
+                    <table style="margin-bottom: 20px;">
                         <thead>
                             <tr><th>Date</th><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr>
                         </thead>
@@ -3454,9 +3443,23 @@
                     </table>
                 `;
             } else {
-                html += `<p>No records found for ${new Date(reportYear, reportMonth - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}.</p>`;
+                html += `<p>No records found for ${monthName}.</p>`;
             }
             
+            html += `
+                <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-top: 10px; border: 1px solid var(--primary);">
+                    <h3 style="margin-top:0; margin-bottom:15px; font-size: 16px; color: var(--primary); text-align: center;">🧾 Account Summary (${monthName})</h3>
+                    <div class="summary-box" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; background:rgba(0,0,0,0.2); padding:15px; border-radius:10px; margin-bottom:15px; text-align:center;">
+                        <div class="summary-item"><b>Previous Balance</b><br><span style="color:${obColor}">${obText}</span></div>
+                        <div class="summary-item"><b>+ New Bill</b><br><span style="color:var(--danger)">₹${currentMonthPurchases.toFixed(2)}</span></div>
+                        <div class="summary-item"><b>- Paid</b><br><span style="color:var(--success)">₹${currentMonthPaid.toFixed(2)}</span></div>
+                    </div>
+                    <div style="display:flex; justify-content:center; background:rgba(0,0,0,0.2); padding:15px; border-radius:10px; text-align:center; font-size:18px;">
+                        <div><b>Final Closing Balance:</b> <span style="color:${cbColor}; font-weight:bold;">${cbText}</span></div>
+                    </div>
+                </div>
+            `;
+
             return html;
         }
 
