@@ -3554,7 +3554,7 @@
             printWindow.document.write('<h2>' + companyName.toUpperCase() + '</h2>');
             if (ownerAddress) printWindow.document.write('<p style="text-align:center; margin:2px 0; font-size:14px;">' + ownerAddress + '</p>');
             if (ownerMobile) printWindow.document.write('<p style="text-align:center; margin:2px 0 15px 0; font-size:14px;"><b>Mob:</b> ' + ownerMobile + '</p>');
-            printWindow.document.write('<h3>Invoice / Statement : ' + custName + ' (' + monthName + ')</h3>');
+            printWindow.document.write('<h3>Invoice : ' + custName + ' (' + monthName + ')</h3>');
             
             let cleanContent = printContent.replace(/color:var\(--success\)/g, 'color:green; font-weight:bold;')
                                            .replace(/color:var\(--danger\)/g, 'color:red; font-weight:bold;')
