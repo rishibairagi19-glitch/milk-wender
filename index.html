@@ -3447,16 +3447,11 @@
             }
             
             html += `
-                <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-top: 10px; border: 1px solid var(--primary);">
-                    <h3 style="margin-top:0; margin-bottom:15px; font-size: 16px; color: var(--primary); text-align: center;">🧾 Account Summary (${monthName})</h3>
-                    <div class="summary-box" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; background:rgba(0,0,0,0.2); padding:15px; border-radius:10px; margin-bottom:15px; text-align:center;">
-                        <div class="summary-item"><b>Previous Balance</b><br><span style="color:${obColor}">${obText}</span></div>
-                        <div class="summary-item"><b>+ New Bill</b><br><span style="color:var(--danger)">₹${currentMonthPurchases.toFixed(2)}</span></div>
-                        <div class="summary-item"><b>- Paid</b><br><span style="color:var(--success)">₹${currentMonthPaid.toFixed(2)}</span></div>
-                    </div>
-                    <div style="display:flex; justify-content:center; background:rgba(0,0,0,0.2); padding:15px; border-radius:10px; text-align:center; font-size:18px;">
-                        <div><b>Final Closing Balance:</b> <span style="color:${cbColor}; font-weight:bold;">${cbText}</span></div>
-                    </div>
+                <div style="margin-top: 15px; padding: 12px 10px; border-top: 2px solid var(--primary); border-bottom: 2px solid var(--primary); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; font-size: 14px; background: rgba(0,0,0,0.1);">
+                    <span><b>Prev Bal:</b> <span style="color:${obColor}">${obText}</span></span>
+                    <span><b>+ New Bill:</b> <span style="color:var(--danger)">₹${currentMonthPurchases.toFixed(2)}</span></span>
+                    <span><b>- Paid:</b> <span style="color:var(--success)">₹${currentMonthPaid.toFixed(2)}</span></span>
+                    <span style="font-size: 15px;"><b>Final Due:</b> <span style="color:${cbColor}; font-weight:bold;">${cbText}</span></span>
                 </div>
             `;
 
@@ -3544,8 +3539,6 @@
             printWindow.document.write('table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }');
             printWindow.document.write('th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }');
             printWindow.document.write('th { background: #f4f4f5; text-transform: uppercase; font-size: 12px; }');
-            printWindow.document.write('.summary-box { display: flex; justify-content: space-between; border: 2px solid #000; padding: 15px; border-radius: 8px; margin-bottom: 20px; background: #fff; }');
-            printWindow.document.write('.summary-item { text-align: center; flex: 1; }');
             printWindow.document.write('h2 { color: #111; margin-bottom: 5px; text-align: center; }');
             printWindow.document.write('h3 { color: #444; margin-top: 0; text-align: center; margin-bottom: 30px; border-bottom: 1px solid #ccc; padding-bottom: 10px;}');
             printWindow.document.write('@media print { .no-print { display: none !important; } }');
