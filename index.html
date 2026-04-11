@@ -2851,14 +2851,14 @@
             let feedIndex = 0;
             
             pending.forEach(obj => {
-                const {c, i, trans} = obj;
+                const {c, i, entry} = obj;
                 
                 let savedItemsMap = {};
                 let savedPayAmt = '';
-                if (trans) {
-                    if (trans.item === 'Payment') savedPayAmt = Math.abs(parseFloat(trans.rate));
-                    else {
-                        try { let parsed = JSON.parse(trans.item); if(Array.isArray(parsed)) parsed.forEach(it => { savedItemsMap[it.item] = it.qty; }); } catch(e) {}
+                if (entry) {
+                    if (entry.payTrans) savedPayAmt = Math.abs(parseFloat(entry.payTrans.rate));
+                    if (entry.itemsTrans) {
+                        try { let parsed = JSON.parse(entry.itemsTrans.item); if(Array.isArray(parsed)) parsed.forEach(it => { savedItemsMap[it.item] = it.qty; }); } catch(e) {}
                     }
                 }
                 
@@ -2872,7 +2872,7 @@
                     </div>`;
                 }).join('');
 
-                let badgeStatus = trans ? `<span style="font-size:11px; color:var(--success); border:1px solid var(--success); padding:3px 8px; border-radius:12px;">Saved / Pre-ordered</span>` : `<span style="font-size:11px; color:var(--warning); border:1px solid var(--warning); padding:3px 8px; border-radius:12px;">Pending</span>`;
+                let badgeStatus = entry ? `<span style="font-size:11px; color:var(--success); border:1px solid var(--success); padding:3px 8px; border-radius:12px;">Saved / Pre-ordered</span>` : `<span style="font-size:11px; color:var(--warning); border:1px solid var(--warning); padding:3px 8px; border-radius:12px;">Pending</span>`;
 
                 html += `
                 <div style="background:var(--card); border:1px solid #475569; padding: 15px; border-radius:12px; margin-bottom:15px; box-shadow:0 4px 6px rgba(0,0,0,0.3); display:flex; flex-direction:column; gap:12px; animation: fadeInUp 0.5s backwards; animation-delay: ${(feedIndex++) * 0.04}s;">
