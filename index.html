@@ -3421,13 +3421,11 @@
                         try {
                             let items = JSON.parse(t.item);
                             if (Array.isArray(items)) {
-                                let tQty = 0;
                                 let tRates = [];
                                 items.forEach(i => {
-                                    tQty += parseFloat(i.qty || 0);
                                     tRates.push(i.rate);
                                 });
-                                dispQty = tQty;
+                                dispQty = items.length + ' Items';
                                 dispRate = tRates.join(', ');
                             }
                         } catch(e) {}
@@ -3554,11 +3552,11 @@
             printWindow.document.write('<style>');
             printWindow.document.write('body { font-family: "Inter", sans-serif; padding: 10px 20px; color: #000; background: #fff; font-size: 12px; margin: 0; }');
             printWindow.document.write('table { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 5px !important; font-size: 12px; }');
-            printWindow.document.write('th, td { border: 1px solid #555; padding: 4px 6px; text-align: left; line-height: 1.1; }');
-            printWindow.document.write('th { background: #f4f4f5; text-transform: uppercase; font-size: 11px; }');
-            printWindow.document.write('h2 { color: #111; margin-bottom: 2px; margin-top: 0; text-align: center; font-size: 18px; }');
+            printWindow.document.write('th, td { border: 1px solid #cbd5e1; padding: 4px 6px; text-align: left; line-height: 1.1; }');
+            printWindow.document.write('th { background: #eff6ff; color: #1e3a8a; text-transform: uppercase; font-size: 11px; }');
+            printWindow.document.write('h2 { color: #1e40af; margin-bottom: 2px; margin-top: 0; text-align: center; font-size: 18px; }');
             printWindow.document.write('p { margin: 2px 0; font-size: 12px !important; }');
-            printWindow.document.write('h3 { color: #444; margin-top: 4px; text-align: center; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 5px; font-size: 14px;}');
+            printWindow.document.write('h3 { color: #334155; margin-top: 4px; text-align: center; margin-bottom: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; font-size: 14px;}');
             printWindow.document.write('div[style*="border-top: 2px solid"] { padding: 6px 10px !important; margin-top: 5px !important; font-size: 12px !important; gap: 5px !important; }');
             printWindow.document.write('@media print { .no-print { display: none !important; } @page { margin: 0.5cm; } }');
             printWindow.document.write('</style>');
@@ -3574,13 +3572,15 @@
             printWindow.document.write('<h2>' + companyName.toUpperCase() + '</h2>');
             if (ownerAddress) printWindow.document.write('<p style="text-align:center; margin:2px 0; font-size:14px;">' + ownerAddress + '</p>');
             if (ownerMobile) printWindow.document.write('<p style="text-align:center; margin:2px 0 15px 0; font-size:14px;"><b>Mob:</b> ' + ownerMobile + '</p>');
-            printWindow.document.write('<h3>Invoice / Statement : ' + custName + ' (' + monthName + ')</h3>');
             
-            let cleanContent = printContent.replace(/color:var\(--success\)/g, 'color:green; font-weight:bold;')
-                                           .replace(/color:var\(--danger\)/g, 'color:red; font-weight:bold;')
-                                           .replace(/color:var\(--text\)/g, 'color:black;')
-                                           .replace(/background:\s*rgba[^;]+;/g, '')
-                                           .replace(/color:white;/g, 'color:black;');
+            printWindow.document.write('<h3>Invoice : ' + custName + ' (' + monthName + ')</h3>');
+            
+            let cleanContent = printContent.replace(/color:var\(--success\)/g, 'color:#15803d; font-weight:bold;')
+                                           .replace(/color:var\(--danger\)/g, 'color:#b91c1c; font-weight:bold;')
+                                           .replace(/color:var\(--text\)/g, 'color:#0f172a;')
+                                           .replace(/background:\s*rgba[^;]+;/g, 'background:#f8fafc;')
+                                           .replace(/color:white;/g, 'color:black;')
+                                           .replace(/var\(--primary\)/g, '#4f46e5');
             
             printWindow.document.write(cleanContent);
             printWindow.document.write('<div style="margin-top:20px; text-align:right; font-weight:bold; font-size: 12px;">Authorized Signature / Stamp<br><br><br>_________________________</div>');
