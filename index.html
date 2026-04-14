@@ -157,11 +157,18 @@
         </div>
     </div>
 
+    <!-- GLOBAL LOADING OVERLAY -->
+    <div id="global-loading-overlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.85); z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
+        <div class="spinner"></div>
+        <h2 id="global-loading-title" style="font-size: 24px; color: var(--primary); margin-top: 25px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Loading...</h2>
+        <p id="global-loading-text" style="color: #e2e8f0; font-size: 14px; font-weight: 500;">Please wait</p>
+    </div>
+
     <!-- PROFILE DROPDOWN MENU -->
     <div id="profile-dropdown" class="hidden" style="position: fixed; top: 60px; left: 20px; background: var(--card); border: 1px solid #475569; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 1000; overflow: hidden; display: flex; flex-direction: column; min-width: 180px;">
         <button onclick="showView('profile-view'); closeProfileDropdown()" style="background: transparent; color: var(--text); padding: 12px 20px; text-align: left; border-radius: 0; border-bottom: 1px solid #334155; width: 100%; border-top: none; border-left: none; border-right: none;">👤 1. Profile</button>
         <button id="lang-btn" onclick="changeLanguage(); closeProfileDropdown()" style="background: transparent; color: var(--text); padding: 12px 20px; text-align: left; border-radius: 0; border-bottom: 1px solid #334155; width: 100%; border-top: none; border-left: none; border-right: none;">🌐 2. Language (हिंदी)</button>
-        <button onclick="openHelpModal(); closeProfileDropdown()" style="background: transparent; color: var(--text); padding: 12px 20px; text-align: left; border-radius: 0; border-bottom: 1px solid #334155; width: 100%; border-top: none; border-left: none; border-right: none;">🆘 3. Need Help?</button>
+        <button id="btn-help-dropdown" onclick="openHelpModal(); closeProfileDropdown()" style="background: transparent; color: var(--text); padding: 12px 20px; text-align: left; border-radius: 0; border-bottom: 1px solid #334155; width: 100%; border-top: none; border-left: none; border-right: none;">🆘 3. Need Help?</button>
         <button onclick="logout()" style="background: transparent; color: var(--danger); padding: 12px 20px; text-align: left; border-radius: 0; width: 100%; border: none;">🚪 4. Logout</button>
     </div>
 
@@ -171,13 +178,13 @@
         <p style="color: #94a3b8; margin-bottom: 30px;">Select your portal to continue</p>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
             <div class="role-card" onclick="showLogin('Owner')"><h3>👑</h3><h4>Owner</h4></div>
-            <div class="role-card" onclick="showLogin('Milk Man')"><h3>🛵</h3><h4>Milk Man</h4></div>
+            <div class="role-card" onclick="showLogin('Milk Man')"><h3>🛵</h3><h4>Delivery Man</h4></div>
             <div class="role-card" onclick="showLogin('Customer')"><h3>🥛</h3><h4>Customer</h4></div>
         </div>
 
         <!-- Help Option -->
         <div style="margin-top: 30px; text-align: center;">
-            <button class="btn-save" style="background: transparent; border: 1px solid var(--primary); color: var(--primary); width: auto; padding: 10px 25px;" onclick="openHelpModal()">🆘 Need Help?</button>
+            <button id="btn-help-landing" class="btn-save" style="background: transparent; border: 1px solid var(--primary); color: var(--primary); width: auto; padding: 10px 25px;" onclick="openHelpModal()">🆘 Need Help?</button>
         </div>
     </div>
 
@@ -274,7 +281,7 @@
         
         <div class="menu-grid">
             <button id="btn-route" class="btn-save box-btn" style="background:#059669" onclick="showView('route-master')"><span style="font-size:28px; margin-bottom:8px;">🗺️</span>Manage Routes</button>
-            <button id="btn-um" class="btn-save box-btn" style="background:#312e81" onclick="showView('user-master')"><span style="font-size:28px; margin-bottom:8px;">🛵</span>Manage Milk Men</button>
+            <button id="btn-um" class="btn-save box-btn" style="background:#312e81" onclick="showView('user-master')"><span style="font-size:28px; margin-bottom:8px;">🛵</span>Manage Delivery Men</button>
             <button id="btn-prod" class="btn-save box-btn" style="background:#4f46e5" onclick="showView('product-master')"><span style="font-size:28px; margin-bottom:8px;">📦</span>Manage Products</button>
             <button id="btn-lm" class="btn-save box-btn" style="background:#1e3a8a" onclick="showView('ledger-master')"><span style="font-size:28px; margin-bottom:8px;">📖</span>Customer Ledger</button>
             <button id="btn-req" class="btn-save box-btn" style="background:#ea580c" onclick="showView('request-master')"><span style="font-size:28px; margin-bottom:8px;">📝</span>Customer Requests</button>
@@ -318,20 +325,31 @@
     </div>
 
     <div id="user-master" class="container hidden">
-        <h2>🛵 Milk Man Master</h2>
-        <div class="grid-form">
-            <input type="hidden" id="editUserIdx">
-            <input type="text" id="uId" placeholder="System ID (Auto)" readonly style="opacity:0.7">
-            <input type="text" id="uUsername" placeholder="Create Login Username (Optional)">
-            <input type="text" id="uName" placeholder="Milk Man Name" required>
-            <input type="text" id="uMobile" placeholder="Mobile Number" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" required>
-            <select id="uRoute" required>
-                <option value="">-- Select Route --</option>
-            </select>
-            <input type="text" id="uPass" placeholder="Set Password">
-            <button id="btnUserSave" class="btn-save" onclick="saveUser()">Save Milk Man</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <h2 style="margin:0;">🛵 Delivery Man Master</h2>
+            <input type="text" id="searchUser" placeholder="🔍 Search..." onkeyup="searchTable(this, 'userTableBody')" style="flex:1; min-width:150px; max-width:300px; padding:8px; margin:0; border-radius:8px;">
+            <button class="btn-save" id="btnShowNewUser" style="width:auto; padding:10px 15px;" onclick="openNewUserForm()">➕ New Delivery Man</button>
         </div>
-        <table><thead><tr><th>Name</th><th>ID</th><th>Route</th><th>Mobile</th><th>Actions</th></tr></thead><tbody id="userTableBody"></tbody></table>
+        <div id="user-form-section" class="hidden">
+            <div class="grid-form">
+                <input type="hidden" id="editUserIdx">
+                <input type="text" id="uId" placeholder="System ID (Auto)" readonly style="opacity:0.7">
+                <input type="text" id="uUsername" placeholder="Create Login Username (Optional)">
+                <input type="text" id="uName" placeholder="Delivery Man Name" required>
+                <input type="text" id="uMobile" placeholder="Mobile Number" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" required>
+                <select id="uRoute" required>
+                    <option value="">-- Select Route --</option>
+                </select>
+                <input type="text" id="uPass" placeholder="Set Password">
+                <div style="display:flex; gap:10px; grid-column: 1 / -1; margin-top: 10px;">
+                    <button id="btnUserSave" class="btn-save" style="flex:1;" onclick="saveUser()">Save Delivery Man</button>
+                    <button class="btn-back" style="flex:1; margin:0;" onclick="closeUserForm()">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div style="overflow-x: auto; margin-top: 20px;">
+            <table><thead><tr><th>Name</th><th>ID</th><th>Route</th><th>Mobile</th><th>Actions</th></tr></thead><tbody id="userTableBody"></tbody></table>
+        </div>
     </div>
 
     <div id="ledger-master" class="container hidden">
@@ -342,10 +360,16 @@
         
         <div id="ledger-cust-view">
             
-            <select id="filterCustMilkManSelect" onchange="renderCustomers()" class="hidden" style="margin-bottom: 15px; width: 100%; max-width: 300px; background:var(--primary); color:white; border:none; font-weight:bold;"></select>
-            <div class="grid-form">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; gap: 10px; flex-wrap: wrap;">
+                <select id="filterCustMilkManSelect" onchange="renderCustomers()" class="hidden" style="flex:1; max-width: 300px; background:var(--primary); color:white; border:none; font-weight:bold; padding: 8px; border-radius: 8px; margin:0;"></select>
+                <input type="text" id="searchCust" placeholder="🔍 Search Customer..." onkeyup="searchTable(this, 'customerTableBody')" style="flex:1; min-width:150px; max-width:300px; padding:8px; border-radius:8px; margin:0;">
+                <button class="btn-save" id="btnShowNewCust" style="width:auto; padding:8px 15px; margin:0;" onclick="openNewCustForm()">➕ New Customer</button>
+            </div>
+
+            <div id="cust-form-section" class="hidden">
+                <div class="grid-form">
                 <input type="hidden" id="editCustIdx">
-                <select id="cMilkMan" onchange="autoFillCustRoute()" required><option value="">-- Assign Milk Man --</option></select>
+                <select id="cMilkMan" onchange="autoFillCustRoute()" required><option value="">-- Assign Delivery Man --</option></select>
                 <div id="cSeqContainer" style="display: flex; grid-column: 1 / -1; gap: 10px; width: 100%;">
                     <input type="number" id="cSeq" placeholder="Morning Seq No" style="flex: 1;">
                     <input type="number" id="cSeqEve" placeholder="Evening Seq No" style="flex: 1;">
@@ -373,42 +397,42 @@
                     </div>
                     <ul id="cItemList" style="margin-top: 10px; margin-bottom: 0; padding-left: 20px; font-size: 13px; color: var(--text);"></ul>
                 </div>
-                <button id="btnCustSave" class="btn-save" onclick="saveCustomer()">Save Customer</button>
+                <div style="display:flex; gap:10px; grid-column: 1 / -1; margin-top: 10px;">
+                    <button id="btnCustSave" class="btn-save" style="flex:1;" onclick="saveCustomer()">Save Customer</button>
+                    <button class="btn-back" style="flex:1; margin:0;" onclick="closeCustForm()">Cancel</button>
+                </div>
+                </div>
             </div>
             <div style="overflow-x: auto; margin-top: 20px;">
-                <table style="min-width: 600px;"><thead><tr><th>Name</th><th>Route & Shift</th><th>Milkman</th><th>Mobile & ID</th><th>Actions</th></tr></thead><tbody id="customerTableBody"></tbody></table>
+                <table style="min-width: 600px;"><thead><tr><th>Name</th><th>Route & Shift</th><th>Delivery Man</th><th>Mobile & ID</th><th>Actions</th></tr></thead><tbody id="customerTableBody"></tbody></table>
             </div>
         </div>
 
         <div id="ledger-trans-view" class="hidden">
             <!-- FEED CONTROLS (DATES & SHIFTS) -->
-            <div style="display:flex; gap:10px; margin-bottom: 10px; overflow-x:auto;">
+            <div style="display:flex; gap:10px; margin-bottom: 15px; background:rgba(0,0,0,0.15); padding:8px; border-radius:10px;">
                 <!-- NEW TABS FOR ENTRIES VIEW -->
-                <button id="tabTransFeed" class="btn-tab active-tab" onclick="switchLedgerTransTab('feed')">🗓️ Daily Feed</button>
-                <button id="tabTransAll" class="btn-tab" onclick="switchLedgerTransTab('all')">📊 All Transactions</button>
+                <button id="tabTransFeed" class="btn-tab active-tab" style="flex:1; margin:0; font-size:13px;" onclick="switchLedgerTransTab('feed')">🗓️ Daily Feed</button>
+                <button id="tabTransAll" class="btn-tab" style="flex:1; margin:0; font-size:13px;" onclick="switchLedgerTransTab('all')">📊 All Trans</button>
             </div>
 
             <div id="trans-tab-feed">
-                <div style="display:flex; gap:10px; margin-bottom: 10px; overflow-x:auto;">
-                    <button class="btn-tab active-tab" id="btnShiftM" onclick="setFeedShift('Morning')">🌅 Morning</button>
-                    <button class="btn-tab" id="btnShiftE" onclick="setFeedShift('Evening')">🌃 Evening</button>
+                <!-- UNIFIED FEED CONTROLS PANEL -->
+            <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #475569; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                <div style="display:flex; gap:10px; align-items:center; flex: 1 1 200px;">
+                    <select id="filterMilkMan" onchange="populateTransCustSelect(); renderTransFeed(); renderTrans();" class="hidden" style="flex:1; padding: 8px; background:var(--primary); color:white; border:none; border-radius: 6px; font-weight:bold; margin:0;"></select>
+                    <button class="badge" style="background:var(--warning); color:black; padding:8px 12px; font-size:13px; font-weight:bold; border-radius:6px; white-space:nowrap; margin-left:auto;" onclick="openSeqModal()">🔢 Edit Seq</button>
                 </div>
-            
-            <!-- TOTAL REQUIREMENT SUMMARY -->
-            <div id="top-feed-summary" style="margin-bottom: 10px;"></div>
-
-            <!-- MILKMAN FILTER & EDIT SEQ -->
-            <div style="display:flex; gap:10px; margin-bottom: 15px; align-items:center;">
-                <select id="filterMilkMan" onchange="populateTransCustSelect(); renderTransFeed(); renderTrans();" class="hidden" style="flex:1; max-width: 300px; background:var(--primary); color:white; border:none; font-weight:bold;"></select>
-                <button class="badge" style="background:var(--warning); color:black; padding:8px 12px; font-size:13px; font-weight:bold;" onclick="openSeqModal()">Edit Seq</button>
-            </div>
-
-            <!-- DATES ROW -->
-            <div style="display:flex; gap:10px; margin-bottom: 15px; align-items:center; overflow-x:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
-                <button class="btn-tab" id="btnDateYest" onclick="setFeedDate(-1)">Yesterday</button>
-                <button class="btn-tab active-tab" id="btnDateToday" onclick="setFeedDate(0)">Today</button>
-                <button class="btn-tab" id="btnDateTom" onclick="setFeedDate(1)">Tomorrow</button>
-                <input type="date" id="feedCustomDate" onchange="setFeedDateCustom(this.value)" style="width:auto; padding:8px; margin:0;">
+                <div style="display:flex; gap:8px; flex: 1 1 150px;">
+                    <button class="btn-tab active-tab" style="flex: 1; padding: 8px; margin:0;" id="btnShiftM" onclick="setFeedShift('Morning')">🌅 Morning</button>
+                    <button class="btn-tab" style="flex: 1; padding: 8px; margin:0;" id="btnShiftE" onclick="setFeedShift('Evening')">🌃 Evening</button>
+                </div>
+                <div style="display:flex; gap:5px; align-items:center; flex: 1 1 220px; overflow-x:auto;">
+                    <button class="btn-tab" style="flex: 1; padding: 6px 8px; font-size: 11px; margin:0;" id="btnDateYest" onclick="setFeedDate(-1)">Yest</button>
+                    <button class="btn-tab active-tab" style="flex: 1; padding: 6px 8px; font-size: 11px; margin:0;" id="btnDateToday" onclick="setFeedDate(0)">Today</button>
+                    <button class="btn-tab" style="flex: 1; padding: 6px 8px; font-size: 11px; margin:0;" id="btnDateTom" onclick="setFeedDate(1)">Tom</button>
+                    <input type="date" id="feedCustomDate" onchange="setFeedDateCustom(this.value)" style="flex: 2; min-width: 100px; padding: 6px; font-size: 11px; margin:0;">
+                </div>
             </div>
 
             <!-- FINAL DAILY REPORT (OUTSIDE SCROLL) -->
@@ -419,8 +443,9 @@
             </div>
             
             <div id="trans-tab-all" class="hidden">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
                     <h3 style="margin:0;">All Transactions</h3>
+                    <input type="text" id="searchTransAll" placeholder="🔍 Search Entry..." onkeyup="searchTable(this, 'transTableBody')" style="flex:1; min-width:150px; max-width:300px; padding:8px; margin:0; border-radius:8px;">
                     <button class="btn-save" style="width:auto; padding:8px 15px;" onclick="openNewTransModal()">➕ New Entry</button>
                 </div>
                 <table><thead><tr><th>Date</th><th>Customer</th><th>Item</th><th>Total</th><th>Actions</th></tr></thead><tbody id="transTableBody"></tbody></table>
@@ -469,7 +494,8 @@
             <div style="display:flex; gap:10px; margin-bottom: 15px; align-items:center; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; flex-wrap:wrap;">
                 <label style="font-size:14px; font-weight:bold; color:var(--primary);">📅 Filter by Date:</label>
                 <input type="date" id="gbFilterDate" onchange="renderGeneralBills()" style="width:auto; padding:8px; margin:0;">
-                <button class="btn-save" style="width:auto; padding:8px 15px; background:var(--warning); color:black;" onclick="document.getElementById('gbFilterDate').value=''; renderGeneralBills();">Clear Filter</button>
+                <input type="text" id="searchGb" placeholder="🔍 Search Bill..." onkeyup="searchTable(this, 'gbTableBody')" style="flex:1; min-width:120px; max-width:200px; padding:8px; margin:0; border-radius:8px;">
+                <button class="btn-save" style="width:auto; padding:8px 15px; background:var(--warning); color:black;" onclick="document.getElementById('gbFilterDate').value=''; document.getElementById('searchGb').value=''; renderGeneralBills();">Clear Filter</button>
             </div>
             <div id="gbSummary" style="margin-bottom:15px; font-size:18px; font-weight:bold; color:var(--success); text-align:right;"></div>
             <div style="overflow-x:auto;"><table><thead><tr><th>Bill No & Date</th><th>Customer</th><th>Item</th><th>Amount</th><th>Actions</th></tr></thead><tbody id="gbTableBody"></tbody></table></div>
@@ -478,33 +504,50 @@
 
     <!-- PRODUCT MASTER -->
     <div id="product-master" class="container hidden">
-        <h2>📦 Product Master</h2>
-        <div class="grid-form">
-            <input type="hidden" id="editProdIdx">
-            <input type="text" id="pName" placeholder="Item Name (e.g. Cow Milk)" required>
-            <div style="display:flex; gap:10px;">
-                <input type="number" id="pRate" placeholder="Rate (₹)" style="flex:1;" required>
-                <select id="pUnit" style="width:100px;">
-                    <option value="Ltr">Ltr</option>
-                    <option value="Kg">Kg</option>
-                    <option value="Pkt">Pkt</option>
-                    <option value="Piece">Piece</option>
-                </select>
-            </div>
-            <button id="btnProdSave" class="btn-save" onclick="saveProduct()">Save Product</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <h2 style="margin:0;">📦 Product Master</h2>
+            <input type="text" id="searchProduct" placeholder="🔍 Search Product..." onkeyup="searchTable(this, 'productTableBody')" style="flex:1; min-width:150px; max-width:300px; padding:8px; margin:0; border-radius:8px;">
+            <button class="btn-save" id="btnShowNewProduct" style="width:auto; padding:10px 15px;" onclick="openNewProductForm()">➕ New Product</button>
         </div>
-        <table><thead><tr><th>Item Name</th><th>Rate (₹)</th><th>Actions</th></tr></thead><tbody id="productTableBody"></tbody></table>
+        <div id="product-form-section" class="hidden">
+            <div class="grid-form">
+                <input type="hidden" id="editProdIdx">
+                <input type="text" id="pName" placeholder="Item Name (e.g. Cow Milk)" required>
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="pRate" placeholder="Rate (₹)" style="flex:1;" required>
+                    <select id="pUnit" style="width:100px;">
+                        <option value="Ltr">Ltr</option>
+                        <option value="Kg">Kg</option>
+                        <option value="Pkt">Pkt</option>
+                        <option value="Piece">Piece</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:10px; grid-column: 1 / -1; margin-top: 10px;">
+                    <button id="btnProdSave" class="btn-save" style="flex:1;" onclick="saveProduct()">Save Product</button>
+                    <button class="btn-back" style="flex:1; margin:0;" onclick="closeProductForm()">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div style="overflow-x: auto; margin-top: 20px;">
+            <table><thead><tr><th>Item Name</th><th>Rate (₹)</th><th>Actions</th></tr></thead><tbody id="productTableBody"></tbody></table>
+        </div>
     </div>
 
     <!-- REQUEST MASTER -->
     <div id="request-master" class="container hidden">
-        <h2>📝 Customer Requests</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <h2 style="margin:0;">📝 Customer Requests</h2>
+            <input type="text" id="searchReq" placeholder="🔍 Search Request..." onkeyup="searchTable(this, 'requestTableBody')" style="flex:1; min-width:150px; max-width:300px; padding:8px; margin:0; border-radius:8px;">
+        </div>
         <table><thead><tr><th>Date</th><th>Customer</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead><tbody id="requestTableBody"></tbody></table>
     </div>
 
     <!-- ROUTE MASTER -->
     <div id="route-master" class="container hidden">
-        <h2>🗺️ Route Master</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <h2 style="margin:0;">🗺️ Route Master</h2>
+            <input type="text" id="searchRoute" placeholder="🔍 Search Route..." onkeyup="searchTable(this, 'routeTableBody')" style="flex:1; min-width:150px; max-width:300px; padding:8px; margin:0; border-radius:8px;">
+        </div>
         <div class="grid-form">
             <input type="hidden" id="editRouteIdx">
             <input type="text" id="rName" placeholder="Route / Area Name" required>
@@ -515,14 +558,20 @@
 
     <!-- OWNER MASTER -->
     <div id="owner-master" class="container hidden">
-        <h2>👑 Owner Master</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <h2 style="margin:0;">👑 Owner Master</h2>
+            <input type="text" id="searchOwner" placeholder="🔍 Search Owner..." onkeyup="searchTable(this, 'ownerTableBody')" style="flex:1; min-width:150px; max-width:300px; padding:8px; margin:0; border-radius:8px;">
+        </div>
         <p style="color: #94a3b8; margin-bottom: 20px;">Manage registered dairy owners and reset their passwords.</p>
         <table><thead><tr><th>Name</th><th>Company</th><th>Login ID</th><th>Email</th><th>Actions</th></tr></thead><tbody id="ownerTableBody"></tbody></table>
         <button class="btn-back" onclick="showView('main-menu')">Back</button>
     </div>
 
     <div id="accounts-user" class="container hidden">
-        <h2>💰 Accounts Summary</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <h2 style="margin:0;">💰 Accounts Summary</h2>
+            <input type="text" id="searchAccount" placeholder="🔍 Search Account..." onkeyup="searchTable(this, 'accTableBody')" style="flex:1; min-width:150px; max-width:300px; padding:8px; margin:0; border-radius:8px;">
+        </div>
         <div id="monthlyReport"></div>
     </div>
 
@@ -583,7 +632,7 @@
         <!-- TAB: REQUESTS -->
         <div id="self-tab-req" class="hidden">
             <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                <h3 style="margin-bottom:10px; font-size: 16px;">✉️ Send Message to Milkman</h3>
+                <h3 style="margin-bottom:10px; font-size: 16px;">✉️ Send Message to Delivery Man</h3>
                 <p style="font-size:12px; color:#94a3b8; margin-top:-5px; margin-bottom:15px;">
                     For requests not covered above (e.g., "bill payment collected", "going on vacation for a week"), send a message here.
                 </p>
@@ -608,7 +657,7 @@
                         <label style="font-size:14px;"><input type="radio" name="payMethod" value="Online" onchange="togglePaymentFields()"> Online</label>
                     </div>
                     <div id="payCashFields">
-                        <input type="text" id="payCashTo" placeholder="Paid to (e.g., Milkman's Name)" style="padding:10px; background:var(--input); border:1px solid #475569; border-radius:8px; color:white;">
+                        <input type="text" id="payCashTo" placeholder="Paid to (e.g., Delivery Man's Name)" style="padding:10px; background:var(--input); border:1px solid #475569; border-radius:8px; color:white;">
                     </div>
                     <div id="payOnlineFields" class="hidden">
                         <div style="text-align:center; margin-bottom:15px;">
@@ -707,61 +756,15 @@
     <div id="helpModal" class="hidden" style="position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10002; display:flex; justify-content:center; align-items:center; padding:20px;">
         <div class="modal-box" style="background:var(--card); width:100%; max-width:500px; padding:20px; border-radius:12px; max-height:85vh; display:flex; flex-direction:column; border:1px solid #475569;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-                <h3 style="margin:0;">🆘 Help & Support</h3>
+                <h3 id="help-modal-title" style="margin:0;">🆘 Help & Support</h3>
                 <button onclick="closeHelpModal()" style="background:transparent; color:var(--danger); border:none; font-size:24px; cursor:pointer;">&times;</button>
             </div>
             
             <div style="overflow-y:auto; flex:1; padding-right:10px;">
-                <p style="color:var(--text); font-size: 14px; margin-top:0; margin-bottom: 15px;">Aam taur par aane wali problems ke solutions niche diye gaye hain. Kisi bhi error par click karein:</p>
+                <p id="help-modal-intro" style="color:var(--text); font-size: 14px; margin-top:0; margin-bottom: 15px;">Aam taur par aane wali problems ke solutions niche diye gaye hain. Kisi bhi error par click karein:</p>
                 
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)"><span>❌ Login Failed / Wrong ID Password?</span><span class="faq-icon">▼</span></div>
-                    <div class="faq-answer">Kripya dhyan dein ki aapne sahi Role (Owner, Milk Man, Customer) select kiya hai. Apna ID aur Password check karein. Agar aap password bhool gaye hain, toh Owner se sampark karein.</div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)"><span>🌐 Connection Failed / Network Error?</span><span class="faq-icon">▼</span></div>
-                    <div class="faq-answer">Apna internet connection check karein. Agar aap local computer par hain, toh ensure karein ki Backend server (Python) chalu hai aur screen par "Backend Chal Raha Hai..." likha aa raha hai.</div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)"><span>📅 Kal ka doodh band karna/badalna hai?</span><span class="faq-icon">▼</span></div>
-                    <div class="faq-answer">Apne Customer dashboard mein jayein, "My Order" (🛒) tab select karein, wahan "One-Time Change" mein agle din ki date select karein aur quantity ko update/0 karke save kar dein.</div>
-                </div>
-                
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)"><span>🔄 Data sync ya update nahi ho raha?</span><span class="faq-icon">▼</span></div>
-                    <div class="faq-answer">Page ko refresh karein, ya logout karke dobara login karein. Agar phir bhi problem aaye toh ensure karein background data properly sync ho gaya hai.</div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)"><span>🔑 Password Reset/Change Kaise Karein?</span><span class="faq-icon">▼</span></div>
-                    <div class="faq-answer">Owner apne dashboard se "Customers" ya "Milk Men" list mein jakar "Pass" button daba kar kisi ka bhi password reset kar sakte hain. Khud ka password badalne ke liye upar "Profile" menu me jayein.</div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)"><span>📦 Naya Product ya Rate kaise add karein?</span><span class="faq-icon">▼</span></div>
-                    <div class="faq-answer">"Manage Products" (📦) menu mein jayein. Wahan aap doodh ke alawa naye items (jaise Ghee, Paneer) aur unka naya rate add ya update kar sakte hain.</div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)"><span>💸 Customer Online Payment kaise karein?</span><span class="faq-icon">▼</span></div>
-                    <div class="faq-answer">Customer apne portal me "Payment" (💸) tab me jayen, "Online" select karein, Owner ka QR code scan karke payment karein aur screenshot upload karke submit kar dein.</div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)"><span>🔢 Delivery Sequence (Kram) kaise badlein?</span><span class="faq-icon">▼</span></div>
-                    <div class="faq-answer">Owner ya Milk Man "Daily Feed" tab me "Edit Seq" button par click karke subah ya shaam ke hisaab se customers ko nayi sequence (1, 2, 3...) de sakte hain.</div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)"><span>🧾 Bina khate wale customer ka bill kaise banayein?</span><span class="faq-icon">▼</span></div>
-                    <div class="faq-answer">"General Bill" (🧾) section ka use karein. Naye customer ka naam, mobile no. aur items daal kar turant invoice / receipt print kar sakte hain.</div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)"><span>💳 Apna QR Code ya Profile Photo kaise badlein?</span><span class="faq-icon">▼</span></div>
-                    <div class="faq-answer">Upar right corner mein User Profile (👤) par click karein. "Edit Profile" daba kar aap apni photo, details, aur Payment QR code update karke save kar sakte hain.</div>
+                <div id="help-faq-container">
+                    <!-- FAQs will be injected here via JS to support language changes -->
                 </div>
 
                 <!-- Contact Info Box inside Modal -->
@@ -791,6 +794,23 @@
     </div>
 
     <script>
+        // --- NETWORK EVENT LISTENERS ---
+        window.addEventListener('offline', () => alert("⚠️ Internet Disconnected! You are now offline.", "error"));
+        window.addEventListener('online', () => {
+            alert("✅ Internet Restored! Reconnecting...", "success");
+            if (currentUser) fetchBackgroundData(true);
+        });
+
+        // --- LOADING OVERLAY HELPERS ---
+        function showGlobalLoading(title = "Loading...", text = "Please wait") {
+            const overlay = document.getElementById('global-loading-overlay');
+            if (overlay) { document.getElementById('global-loading-title').innerText = title; document.getElementById('global-loading-text').innerText = text; overlay.classList.remove('hidden'); }
+        }
+        function hideGlobalLoading() {
+            const overlay = document.getElementById('global-loading-overlay');
+            if (overlay) overlay.classList.add('hidden');
+        }
+
         // --- GLOBAL PREMIUM TOAST SYSTEM ---
         // Overrides native blocking alert() with beautiful UI Toasts
         window.nativeAlert = window.alert;
@@ -814,6 +834,22 @@
          // --- GLOBAL DATE FORMATTER (Fixes Timezone/Locale Bugs) ---
         function formatDate(d) {
             return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth()+1).padStart(2, '0')}-${d.getFullYear()}`;
+        }
+        
+        // --- GLOBAL SEARCH FUNCTION ---
+        function searchTable(inputElem, tbodyId) {
+            let filter = inputElem.value.toLowerCase();
+            let tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
+            let trs = tbody.getElementsByTagName('tr');
+            for (let i = 0; i < trs.length; i++) {
+                let rowText = trs[i].textContent || trs[i].innerText;
+                if (rowText.toLowerCase().indexOf(filter) > -1) {
+                    trs[i].style.display = "";
+                } else {
+                    trs[i].style.display = "none";
+                }
+            }
         }
         function convertToDDMMYYYY(yyyy_mm_dd) {
             if(!yyyy_mm_dd) return "";
@@ -1000,10 +1036,32 @@
             }
         }
 
+        const enFaqs = `<div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>❌ Login Failed / Wrong ID Password?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Please ensure you have selected the correct Role (Owner, Delivery Man, Customer). Check your ID and Password. If you forgot your password, contact your Owner.</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>🌐 Connection Failed / Network Error?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Check your internet connection. If you are on a local computer, ensure the Backend server (Python) is running.</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>📅 How to pause/change tomorrow's order?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Go to your Customer dashboard, select the "My Order" (🛒) tab, choose tomorrow's date in "One-Time Change" and update the quantity to 0 or your desired amount, then save.</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>🔄 Data not syncing or updating?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Refresh the page, or log out and log back in. If the problem persists, ensure background data has synced properly.</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>🔑 How to Reset/Change Password?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Owners can reset any password from their "Customers" or "Delivery Men" list by clicking "Pass". To change your own password, go to the "Profile" menu at the top.</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>📦 How to add a new Product or Rate?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Go to the "Manage Products" (📦) menu. There you can add new items (like Ghee, Paneer) and their rates.</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>💸 How can a Customer pay online?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Customers can go to the "Payment" (💸) tab in their portal, select "Online", scan the Owner's QR code, upload the screenshot, and submit.</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>🔢 How to change Delivery Sequence?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Owners or Delivery Men can click the "Edit Seq" button in the "Daily Feed" tab to assign a new sequence (1, 2, 3...) to customers.</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>🧾 How to create a bill for a non-regular customer?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Use the "General Bill" (🧾) section. Enter the new customer's name, mobile no., and items to instantly print an invoice/receipt.</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>💳 How to change my QR Code or Profile Photo?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Click on User Profile (👤) in the top right corner. Click "Edit Profile" to update your photo, details, and Payment QR code, then save.</div></div>`;
+
+        const hiFaqs = `<div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>❌ Login Failed / Wrong ID Password?</span><span class="faq-icon">▼</span></div><div class="faq-answer">कृपया ध्यान दें कि आपने सही Role (Owner, Delivery Man, Customer) सेलेक्ट किया है। अपना ID और Password चेक करें। अगर आप पासवर्ड भूल गए हैं, तो Owner से संपर्क करें।</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>🌐 Connection Failed / Network Error?</span><span class="faq-icon">▼</span></div><div class="faq-answer">अपना इंटरनेट कनेक्शन चेक करें। अगर आप लोकल कंप्यूटर पर हैं, तो सुनिश्चित करें कि Backend सर्वर (Python) चालू है।</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>📅 कल का दूध बंद करना/बदलना है?</span><span class="faq-icon">▼</span></div><div class="faq-answer">अपने Customer डैशबोर्ड में जाएं, "My Order" (🛒) टैब चुनें, वहां "One-Time Change" में अगले दिन की तारीख सेलेक्ट करें और मात्रा को अपडेट/0 करके सेव कर दें।</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>🔄 Data sync या update नहीं हो रहा?</span><span class="faq-icon">▼</span></div><div class="faq-answer">पेज को रिफ्रेश करें, या लॉगआउट करके दोबारा लॉगिन करें। अगर फिर भी प्रॉब्लम आए तो सुनिश्चित करें बैकग्राउंड डेटा सिंक हो गया है।</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>🔑 Password Reset/Change कैसे करें?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Owner अपने डैशबोर्ड से "Customers" या "Delivery Men" लिस्ट में जाकर "Pass" बटन दबा कर किसी का भी पासवर्ड रीसेट कर सकते हैं। खुद का पासवर्ड बदलने के लिए ऊपर "Profile" मेनू में जाएं।</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>📦 नया Product या Rate कैसे add करें?</span><span class="faq-icon">▼</span></div><div class="faq-answer">"Manage Products" (📦) मेनू में जाएं। वहां आप दूध के अलावा नए आइटम (जैसे Ghee, Paneer) और उनका रेट add या update कर सकते हैं।</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>💸 Customer Online Payment कैसे करें?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Customer अपने पोर्टल में "Payment" (💸) टैब में जाएं, "Online" सेलेक्ट करें, Owner का QR कोड स्कैन करके पेमेंट करें और स्क्रीनशॉट अपलोड करके सबमिट कर दें।</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>🔢 Delivery Sequence (क्रम) कैसे बदलें?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Owner या Delivery Man "Daily Feed" टैब में "Edit Seq" बटन पर क्लिक करके ग्राहकों को नई सीक्वेंस (1, 2, 3...) दे सकते हैं।</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>🧾 बिना खाते वाले ग्राहक का बिल कैसे बनाएं?</span><span class="faq-icon">▼</span></div><div class="faq-answer">"General Bill" (🧾) सेक्शन का उपयोग करें। नए ग्राहक का नाम, मोबाइल नंबर और आइटम्स डालकर तुरंत इनवॉइस/रसीद प्रिंट कर सकते हैं।</div></div>
+        <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>💳 अपना QR Code या Profile Photo कैसे बदलें?</span><span class="faq-icon">▼</span></div><div class="faq-answer">ऊपर राइट कॉर्नर में User Profile (👤) पर क्लिक करें। "Edit Profile" दबा कर आप अपनी फोटो, डिटेल्स, और Payment QR कोड अपडेट करके सेव कर सकते हैं।</div></div>`;
+
         const translations = {
             'en': {
                 'btn-route': '<span style="font-size:28px; margin-bottom:8px;">🗺️</span>Manage Routes',
-                'btn-um': '<span style="font-size:28px; margin-bottom:8px;">🛵</span>Manage Milk Men',
+                'btn-um': '<span style="font-size:28px; margin-bottom:8px;">🛵</span>Manage Delivery Men',
                 'btn-prod': '<span style="font-size:28px; margin-bottom:8px;">📦</span>Manage Products',
                 'btn-lm-owner': '<span style="font-size:28px; margin-bottom:8px;">📖</span>Customer Ledger',
                 'btn-lm-mm': '<span style="font-size:28px; margin-bottom:8px;">📝</span>Customers & Entries',
@@ -1013,14 +1071,19 @@
                 'btn-manual-bill': '<span style="font-size:28px; margin-bottom:8px;">🧾</span>General Bill',
                 'btn-self': '<span style="font-size:24px; margin:0;">📈</span>View Detailed My Report',
                 'tabCust': 'Customers', 'tabTrans': 'Entries',
-                'tabTransFeed': '🗓️ Daily Feed', 'tabTransAll': '📊 All Transactions',
+                'tabTransFeed': '🗓️ Daily Feed', 'tabTransAll': '📊 All Trans',
                 'btnShiftM': '🌅 Morning', 'btnShiftE': '🌃 Evening',
                 'tabSelfStatement': '📊 Statement', 'tabSelfOrder': '🛒 My Order', 'tabSelfReq': '💬 Requests', 'tabSelfPay': '💸 Payment',
+                'btn-help-dropdown': '🆘 3. Need Help?',
+                'btn-help-landing': '🆘 Need Help?',
+                'help-modal-title': '🆘 Help & Support',
+                'help-modal-intro': 'Solutions to common problems are given below. Click on any question to expand:',
+                'help-faq-container': enFaqs,
                 'langBtn': '🌐 2. Language (हिंदी)'
             },
             'hi': {
                 'btn-route': '<span style="font-size:28px; margin-bottom:8px;">🗺️</span>रूट (Routes)',
-                'btn-um': '<span style="font-size:28px; margin-bottom:8px;">🛵</span>दूध वाले (Milk Men)',
+                'btn-um': '<span style="font-size:28px; margin-bottom:8px;">🛵</span>डिलीवरी वाले (Delivery Men)',
                 'btn-prod': '<span style="font-size:28px; margin-bottom:8px;">📦</span>प्रोडक्ट और रेट',
                 'btn-lm-owner': '<span style="font-size:28px; margin-bottom:8px;">📖</span>कस्टमर खाता',
                 'btn-lm-mm': '<span style="font-size:28px; margin-bottom:8px;">📝</span>कस्टमर और एंट्री',
@@ -1033,6 +1096,11 @@
                 'tabTransFeed': '🗓️ डेली एंट्री', 'tabTransAll': '📊 सभी एंट्री',
                 'btnShiftM': '🌅 सुबह', 'btnShiftE': '🌃 शाम',
                 'tabSelfStatement': '📊 मेरा खाता', 'tabSelfOrder': '🛒 मेरा ऑर्डर', 'tabSelfReq': '💬 मैसेज', 'tabSelfPay': '💸 पेमेंट',
+                'btn-help-dropdown': '🆘 3. मदद (Need Help)',
+                'btn-help-landing': '🆘 मदद चाहिए?',
+                'help-modal-title': '🆘 मदद और सपोर्ट',
+                'help-modal-intro': 'आम तौर पर आने वाली समस्याओं के समाधान नीचे दिए गए हैं। किसी भी प्रश्न पर क्लिक करें:',
+                'help-faq-container': hiFaqs,
                 'langBtn': '🌐 2. Language (English)'
             }
         };
@@ -1073,6 +1141,12 @@
             setHtml('tabSelfOrder', dict['tabSelfOrder']);
             setHtml('tabSelfReq', dict['tabSelfReq']);
             setHtml('tabSelfPay', dict['tabSelfPay']);
+
+            setHtml('btn-help-dropdown', dict['btn-help-dropdown']);
+            setHtml('btn-help-landing', dict['btn-help-landing']);
+            setHtml('help-modal-title', dict['help-modal-title']);
+            setHtml('help-modal-intro', dict['help-modal-intro']);
+            setHtml('help-faq-container', dict['help-faq-container']);
 
             let langBtn = document.getElementById('lang-btn');
             if(langBtn) langBtn.innerHTML = dict['langBtn'];
@@ -1330,7 +1404,8 @@
 
         function showLogin(role) {
             currentLoginRole = role;
-            document.getElementById('login-title').innerText = `Login as ${role}`;
+            let displayRole = role === 'Milk Man' ? 'Delivery Man' : role;
+            document.getElementById('login-title').innerText = `Login as ${displayRole}`;
             
             let savedRole = localStorage.getItem('savedRole');
             if (savedRole === role && localStorage.getItem('savedId')) {
@@ -1383,6 +1458,12 @@
 
             const pass = document.getElementById('loginPass').value;
             
+            showGlobalLoading("Authenticating...", "Checking your credentials securely...");
+            let slowNetTimer = setTimeout(() => {
+                document.getElementById('global-loading-text').innerText = "Network is slow. Please wait...";
+                alert("⚠️ Network is running slow. Please wait...", "warning");
+            }, 6000);
+
             try {
                 const response = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
@@ -1418,6 +1499,7 @@
                     
                     // Empty initialize for fast render
                     users = []; customers = []; transactions = []; products = []; requests = []; routes = [];
+                    if (currentUser.type === 'Customer') customers.push(currentUser);
                     populateProductDropdowns();
                     setupUI(); 
                     
@@ -1440,7 +1522,7 @@
                     document.getElementById('toast-container').appendChild(syncToast);
                     
                     // Trigger Background Data Download
-                    fetchBackgroundData();
+                    fetchBackgroundData(true);
                 } else {
                     alert(result.message || "Wrong ID or Password");
                 if (isAutoLogin) logout();
@@ -1449,11 +1531,18 @@
             alert("Connection Failed!\n\nReason: " + err.message + "\n\nSteps to Fix:\n1. Open CMD, type 'python app.py' and ensure it shows 'Backend Chal Raha Hai...'\n2. Do NOT double-click the HTML file. Open your browser and go to http://127.0.0.1:5000 directly.");
                 console.error(err);
             if (isAutoLogin) showView('landing-page');
+            } finally {
+                clearTimeout(slowNetTimer);
+                if(!currentUser) hideGlobalLoading();
             }
         if (btn) btn.innerText = "Login";
         }
 
-        async function fetchBackgroundData() {
+        async function fetchBackgroundData(isInitialLogin = false) {
+            let slowDataTimer = setTimeout(() => {
+                if(isInitialLogin && document.getElementById('global-loading-text')) document.getElementById('global-loading-text').innerText = "Downloading data is taking longer due to slow internet...";
+                alert("⚠️ Downloading data is taking longer due to slow internet...", "warning");
+            }, 6000);
             try {
                 const res = await fetch(`${API_BASE}/sync_data`, {
                     method: 'POST',
@@ -1463,6 +1552,7 @@
                 const result = await res.json();
                 if (result.success) {
                     users = result.data.users || []; customers = result.data.customers || [];
+                    if (currentUser.type === 'Customer') customers.push(currentUser);
                     transactions = result.data.transactions || []; products = result.data.products || [];
                     requests = result.data.requests || []; routes = result.data.routes || [];
                     
@@ -1477,6 +1567,9 @@
                 let syncToast = document.getElementById('sync-toast');
                 if (syncToast) syncToast.remove();
                 alert("Data sync failed. Please check connection.", "error");
+            } finally {
+                clearTimeout(slowDataTimer);
+                if(isInitialLogin) hideGlobalLoading();
             }
         }
         
@@ -1527,6 +1620,9 @@
 
             document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
+            
+            // Clear all search inputs when changing views
+            document.querySelectorAll('input[id^="search"]').forEach(inp => inp.value = "");
             
             sessionStorage.setItem('lastView', id); // Save tab history
 
@@ -1588,6 +1684,7 @@
 
             if(id === 'user-master') { 
                 resetForm('user'); 
+                closeUserForm();
                 populateRouteDropdown();
                 renderUsers(); 
             }
@@ -1612,10 +1709,16 @@
                 tempDateEl.min = new Date().toISOString().split("T")[0]; // Set min date to today
                 document.getElementById('temp-change-items-view').innerHTML = '<p style="font-size:13px; color:#94a3b8;">Please select a date to make a change.</p>';
                 
-                const custObj = customers.find(c => c.cid === currentUser.login_id);
+                const custObj = customers.find(c => String(c.cid) === String(currentUser.login_id));
                 if (custObj) {
                     const milkman = users.find(u => u.login_id === custObj.milkman_id);
                     if (milkman) document.getElementById('payCashTo').value = milkman.name;
+                    
+                    const shiftSel = document.getElementById('tempChangeShift');
+                    if (shiftSel && custObj.shift) {
+                        if (custObj.shift === 'Evening') shiftSel.value = 'Evening';
+                        else shiftSel.value = 'Morning';
+                    }
                 }
 
                 const owner = users.find(u => u.type === 'Owner' && u.company === currentUser.company);
@@ -1627,7 +1730,7 @@
 
                 togglePaymentFields();
             }
-            if(id === 'product-master') { resetForm('product'); renderProducts(); }
+            if(id === 'product-master') { resetForm('product'); closeProductForm(); renderProducts(); }
             if(id === 'request-master') { renderOwnerRequests(); }
             if(id === 'route-master') { resetForm('route'); renderRoutes(); } // This was missing from the previous diff, adding it back.
             if(id === 'owner-master') { renderOwners(); }
@@ -1669,6 +1772,26 @@
                 console.error("Error fetching requests:", error);
             }
         }
+
+        function openNewUserForm() {
+            resetForm('user');
+            document.getElementById('user-form-section').classList.remove('hidden');
+            document.getElementById('btnShowNewUser').classList.add('hidden');
+        }
+        function closeUserForm() {
+            document.getElementById('user-form-section').classList.add('hidden');
+            document.getElementById('btnShowNewUser').classList.remove('hidden');
+        }
+        function openNewProductForm() {
+            resetForm('product');
+            document.getElementById('product-form-section').classList.remove('hidden');
+            document.getElementById('btnShowNewProduct').classList.add('hidden');
+        }
+        function closeProductForm() {
+            document.getElementById('product-form-section').classList.add('hidden');
+            document.getElementById('btnShowNewProduct').classList.remove('hidden');
+        }
+
         async function saveUser() {
             if(isMilkMan()) { alert("Access Denied!"); return; }
             if (!validateForm('user-master')) return;
@@ -1689,7 +1812,7 @@
             
             if(!data.name || !data.mobile) return alert("Name and Mobile are required!");
             if(data.mobile.length !== 10) return alert("Mobile Number must be exactly 10 digits!");
-            if(idx === "" && !data.pass) return alert("Password is required for new Milk Man!");
+            if(idx === "" && !data.pass) return alert("Password is required for new Delivery Man!");
             if(!data.route) return alert("Route is mandatory! Please assign a Route.");
             
             let uId = document.getElementById('uId').value.trim();
@@ -1701,12 +1824,24 @@
             
             if (savedData.success === false) {
                 alert(savedData.message);
-                document.getElementById('btnUserSave').innerText = idx === "" ? "Save Milk Man" : "Update Milk Man";
+                document.getElementById('btnUserSave').innerText = idx === "" ? "Save Delivery Man" : "Update Delivery Man";
                 return;
             }
 
             if(idx === "") users.push(savedData); else users[idx] = savedData;
             resetForm('user'); populateRouteDropdown(); renderUsers();
+            closeUserForm();
+        }
+
+        function openNewCustForm() {
+            resetForm('cust');
+            document.getElementById('cust-form-section').classList.remove('hidden');
+            document.getElementById('btnShowNewCust').classList.add('hidden');
+        }
+
+        function closeCustForm() {
+            document.getElementById('cust-form-section').classList.add('hidden');
+            document.getElementById('btnShowNewCust').classList.remove('hidden');
         }
 
         // --- CUSTOMER ---
@@ -1715,7 +1850,7 @@
             document.getElementById('btnCustSave').innerText = "Saving...";
             const idx = document.getElementById('editCustIdx').value;
             if (idx === "" && !document.getElementById('cPass').value) return alert("Error: Please set a password for the new Customer!");
-            if(!document.getElementById('cMilkMan').value) return alert("Error: Please assign a Milk Man to this customer!");
+            if(!document.getElementById('cMilkMan').value) return alert("Error: Please assign a Delivery Man to this customer!");
             
             let cUsername = document.getElementById('cUsername').value.trim();
 
@@ -1772,6 +1907,7 @@
 
             if(idx === "") customers.push(savedData); else customers[idx] = savedData;
             resetForm('cust'); renderCustomers();
+            closeCustForm();
         }
 
         // --- TRANSACTION ---
@@ -1813,7 +1949,7 @@
 
         async function saveTransaction() {
             if (!validateForm('editTransModal')) return;
-            const btn = document.getElementById('btnTransSave'); btn.innerText = "Saving...";
+            const btn = document.getElementById('btnTransSave'); btn.innerText = "Saving..."; btn.disabled = true;
             const idx = document.getElementById('editTransIdx').value;
             
             const dateVal = document.getElementById('tDateText').value;
@@ -1851,7 +1987,7 @@
                 closeEditTransModal();
                 alert(idx !== "" ? "Entry Updated Successfully!" : "New Entry Saved Successfully!");
             } catch(e) { alert("Network error!"); }
-            btn.innerText = idx !== "" ? "Update Entry" : "Save Entry";
+            btn.innerText = idx !== "" ? "Update Entry" : "Save Entry"; btn.disabled = false;
         }
 
         // --- GENERAL BILLS LOGIC (REPLACES MANUAL ENTRY) ---
@@ -2107,6 +2243,7 @@
             const savedData = await res.json();
             if(idx === "") products.push(savedData); else products[idx] = savedData;
             resetForm('product'); renderProducts(); populateProductDropdowns();
+            closeProductForm();
         }
 
         // --- ROUTES ---
@@ -2140,9 +2277,10 @@
             if(!date || !qty) return alert("Please enter Date and Requirement!");
             
             const btn = window.event ? window.event.target : null; if(btn) btn.innerText = "Sending...";
+            let custObj = customers.find(c => String(c.cid) === String(currentUser.login_id));
             let data = {
                 cust_id: currentUser.login_id, cust_name: currentUser.name, req_date: date, req_qty: qty,
-                company: currentUser.company, milkman_id: customers.find(c => c.cid === currentUser.login_id)?.milkman_id || ''
+                company: currentUser.company, milkman_id: custObj ? custObj.milkman_id : ''
             };
             const res = await fetch(`${API_BASE}/requests`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
             requests.push(await res.json());
@@ -2156,11 +2294,26 @@
             document.getElementById('payOnlineFields').classList.toggle('hidden', method !== 'Online');
         }
 
-        const toBase64 = file => new Promise((resolve, reject) => {
+        // 🚀 SPEED FIX: Compress huge mobile screenshots before saving them to DB
+        const compressImage = (file, maxWidth = 600, maxHeight = 600, quality = 0.5) => new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width; let height = img.height;
+                    if (width > height) { if (width > maxWidth) { height = Math.round(height *= maxWidth / width); width = maxWidth; } } 
+                    else { if (height > maxHeight) { width = Math.round(width *= maxHeight / height); height = maxHeight; } }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = e => reject(e);
+            };
+            reader.onerror = e => reject(e);
         });
 
         async function submitPayment() {
@@ -2171,6 +2324,9 @@
             if (isNaN(amount) || amount <= 0) return alert("Please enter a valid payment amount.");
             const method = document.querySelector('input[name="payMethod"]:checked').value;
             let details = {}; let screenshotData = '';
+            
+            const btn = window.event ? window.event.target : null; 
+            
             if (method === 'Cash') {
                 const paidTo = document.getElementById('payCashTo').value.trim();
                 if (!paidTo) return alert("Please specify who you paid the cash to.");
@@ -2178,12 +2334,16 @@
             } else {
                 const fileInput = document.getElementById('payScreenshot');
                 if (fileInput.files.length === 0) return alert("Please upload a screenshot for online payment.");
-                try { screenshotData = await toBase64(fileInput.files[0]); } catch (e) { return alert("Error reading screenshot file."); }
+                if(btn) { btn.innerText = "Compressing..."; btn.disabled = true; }
+                try { screenshotData = await compressImage(fileInput.files[0]); } catch (e) { 
+                    if(btn) { btn.innerText = "Submit Payment"; btn.disabled = false; }
+                    return alert("Error reading screenshot file."); 
+                }
                 details.screenshot = screenshotData;
             }
-            const btn = window.event ? window.event.target : null; 
             if(btn) { btn.innerText = "Submitting..."; btn.disabled = true; }
-            let data = { cust_id: currentUser.login_id, cust_name: currentUser.name, req_date: requestDate, req_qty: `Payment of ₹${amount} via ${method}`, type: 'Payment', details: JSON.stringify({ amount, method, ...details }), company: currentUser.company, milkman_id: customers.find(c => c.cid === currentUser.login_id)?.milkman_id || '' };
+            let custObj = customers.find(c => String(c.cid) === String(currentUser.login_id));
+            let data = { cust_id: currentUser.login_id, cust_name: currentUser.name, req_date: requestDate, req_qty: `Payment of ₹${amount} via ${method}`, type: 'Payment', details: JSON.stringify({ amount, method, ...details }), company: currentUser.company, milkman_id: custObj ? custObj.milkman_id : '' };
             try {
                 const res = await fetch(`${API_BASE}/requests`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
                 requests.push(await res.json());
@@ -2239,7 +2399,7 @@
             const tbody = document.getElementById('customerTableBody');
             const mmSelect = document.getElementById('cMilkMan');
             
-            let mmHtml = '<option value="">-- Assign Milk Man --</option>';
+            let mmHtml = '<option value="">-- Assign Delivery Man --</option>';
             
             let custFilterSel = document.getElementById('filterCustMilkManSelect');
             let selectedCustMM = (custFilterSel && !custFilterSel.classList.contains('hidden')) ? custFilterSel.value : null;
@@ -2326,7 +2486,7 @@
             const payUl = document.getElementById('custPaymentList');
             if(!msgUl || !payUl) return; 
             let msgHtml = ''; let payHtml = '';
-            requests.filter(r => r.cust_id === currentUser.login_id).forEach(r => {
+            requests.filter(r => String(r.cust_id) === String(currentUser.login_id)).forEach(r => {
                 let status = r.status || 'Pending';
                 let color = status === 'Pending' ? 'var(--warning)' : (status === 'Approved' ? 'var(--success)' : 'var(--danger)');
                 let li = `<li style="margin-bottom:5px;">On <b>${r.req_date}</b>: ${r.req_qty} <span style="color:${color}; border:1px solid ${color}; padding:2px 5px; border-radius:4px; font-size:10px; margin-left:5px;">${status}</span></li>`;
@@ -2517,12 +2677,12 @@
             const select = document.getElementById('selfItemAdd');
             if(!ul || !select) return;
             
-            let custObj = customers.find(c => c.cid === currentUser.login_id);
-            if(!custObj) return;
-            
             let selectHtml = '<option value="">-- Select Product --</option>';
             products.forEach(p => selectHtml += `<option value="${p.item_name}" data-rate="${p.rate}">${p.item_name} (${p.unit || '-'})</option>`);
             select.innerHTML = selectHtml;
+            
+            let custObj = customers.find(c => String(c.cid) === String(currentUser.login_id));
+            if(!custObj) return;
             
             let items = getCustItems(custObj);
             let html = '';
@@ -2540,7 +2700,7 @@
         }
         
         async function addSelfCustItem() {
-            let custObj = customers.find(c => c.cid === currentUser.login_id);
+            let custObj = customers.find(c => String(c.cid) === String(currentUser.login_id));
             if(!custObj) return;
             const item = document.getElementById('selfItemAdd').value;
             const qtyInput = document.getElementById('selfQtyAdd').value;
@@ -2560,17 +2720,19 @@
             document.getElementById('selfQtyAdd').value = ''; document.getElementById('selfItemAdd').value = ''; document.getElementById('selfRateAdd').value = '';
             if(btn) btn.innerText = "Add / Update";
             renderSelfCustItems();
+            renderTempChangeItems();
         }
         
         async function removeSelfCustItem(idx) {
             if(!confirm("Remove this item from your daily plan?")) return;
-            let custObj = customers.find(c => c.cid === currentUser.login_id);
+            let custObj = customers.find(c => String(c.cid) === String(currentUser.login_id));
             if(!custObj) return;
             let items = getCustItems(custObj);
             items.splice(idx, 1);
             custObj.defItem = JSON.stringify(items);
             await fetch(`${API_BASE}/customers`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(custObj) });
             renderSelfCustItems();
+            renderTempChangeItems();
         }
 
         // --- SELF VIEW TEMP CHANGE LOGIC ---
@@ -2595,7 +2757,7 @@
             
             const dateStr = convertToDDMMYYYY(dateEl.value);
 
-            const custObj = customers.find(c => c.cid === currentUser.login_id);
+            const custObj = customers.find(c => String(c.cid) === String(currentUser.login_id));
             if (!custObj) {
                 viewDiv.innerHTML = "Error: Customer profile not found.";
                 return;
@@ -2648,7 +2810,7 @@
             const dateEl = document.getElementById('tempChangeDate');
             const shift = document.getElementById('tempChangeShift').value;
             const dateStr = convertToDDMMYYYY(dateEl.value);
-            const custObj = customers.find(c => c.cid === currentUser.login_id);
+            const custObj = customers.find(c => String(c.cid) === String(currentUser.login_id));
 
             let defItems = getCustItems(custObj);
             let itemsToSave = []; let grandTotal = 0;
@@ -2663,7 +2825,7 @@
             let payAmt = parseFloat(document.getElementById('temp-pay').value) || 0;
 
             try {
-                let existingItemsTrans = transactions.find(t => t.date === dateStr && t.cust === custObj.name && t.shift === shift && t.item !== 'Payment');
+                let existingItemsTrans = transactions.find(t => t.date === dateStr && t.cust === custObj.name && (t.shift === shift || !t.shift) && t.item !== 'Payment');
                 if (itemsToSave.length > 0) {
                     let data = { date: dateStr, cust: custObj.name, item: JSON.stringify(itemsToSave), qty: '-', rate: grandTotal, total: grandTotal, company: custObj.company, shift: shift };
                     if (existingItemsTrans) data.id = existingItemsTrans.id;
@@ -2674,7 +2836,7 @@
                     await fetch(`${API_BASE}/transactions/${existingItemsTrans.id}`, { method: 'DELETE' });
                     transactions = transactions.filter(t => t.id !== existingItemsTrans.id);
                 }
-                let existingPayTrans = transactions.find(t => t.date === dateStr && t.cust === custObj.name && t.shift === shift && t.item === 'Payment');
+                let existingPayTrans = transactions.find(t => t.date === dateStr && t.cust === custObj.name && (t.shift === shift || !t.shift) && t.item === 'Payment');
                 if (payAmt > 0) {
                     let pData = { date: dateStr, cust: custObj.name, item: 'Payment', qty: '-', rate: payAmt, total: payAmt, company: custObj.company, shift: shift };
                     if (existingPayTrans) pData.id = existingPayTrans.id;
@@ -2785,7 +2947,6 @@
         // --- WHATSAPP STATUS STYLE DAILY FEED ---
         function renderTransFeed() {
             const feedDiv = document.getElementById('daily-feed-view');
-            const summaryDiv = document.getElementById('top-feed-summary');
             if (!feedDiv) return;
             
             let filterSel = document.getElementById('filterMilkMan');
@@ -2803,7 +2964,6 @@
             });
 
             let pending = [], completed = [];
-            let itemsToCarry = {};
 
             customers.forEach((c, i) => {
                 if (isMilkMan() && c.milkman_id !== currentUser.login_id) return;
@@ -2815,27 +2975,8 @@
                 
                 if (entry && currentFeedOffset <= 0) {
                     completed.push({c, i});
-                    if (entry.itemsTrans) {
-                        try {
-                            let items = JSON.parse(entry.itemsTrans.item);
-                            if (Array.isArray(items)) {
-                                items.forEach(it => {
-                                    if(!itemsToCarry[it.item]) itemsToCarry[it.item] = 0;
-                                    itemsToCarry[it.item] += parseFloat(it.qty || 0);
-                                });
-                            }
-                        } catch(e) {
-                            if(!itemsToCarry[entry.itemsTrans.item]) itemsToCarry[entry.itemsTrans.item] = 0;
-                            itemsToCarry[entry.itemsTrans.item] += parseFloat(entry.itemsTrans.qty || 0);
-                        }
-                    }
                 } else {
                     pending.push({c, i, entry});
-                    let defItems = getCustItems(c);
-                    defItems.forEach(di => {
-                        if(!itemsToCarry[di.item]) itemsToCarry[di.item] = 0;
-                        itemsToCarry[di.item] += parseFloat(di.qty || 0);
-                    });
                 }
             });
 
@@ -2843,10 +2984,6 @@
             pending.sort((a,b) => getSeq(a.c) - getSeq(b.c));
             completed.sort((a,b) => getSeq(a.c) - getSeq(b.c));
 
-            // Build Carry Summary
-            let summaryPills = Object.keys(itemsToCarry).map(k => `<span style="background:rgba(255,255,255,0.2); padding:4px 10px; border-radius:12px; font-size:13px; font-weight:bold;">${k}: ${itemsToCarry[k]}</span>`).join('');
-            summaryDiv.innerHTML = `<div style="background:var(--primary); padding:15px; border-radius:10px;"><h4 style="margin:0 0 10px 0; color:white;">🛒 Total Requirements for ${currentFeedShift}</h4><div style="display:flex; gap:10px; flex-wrap:wrap; color:white;">${summaryPills || '<span style="font-size:13px;">No items defined</span>'}</div></div>`;
-            
             let html = '';
             let feedIndex = 0;
             
@@ -3133,8 +3270,8 @@
             }
 
             try {
-                let existingItemsTrans = transactions.find(t => t.date === currentFeedDateStr && t.cust === c.name && t.shift === currentFeedShift && t.item !== 'Payment');
-                let existingPayTrans = transactions.find(t => t.date === currentFeedDateStr && t.cust === c.name && t.shift === currentFeedShift && t.item === 'Payment');
+                let existingItemsTrans = transactions.find(t => t.date === currentFeedDateStr && t.cust === c.name && (t.shift === currentFeedShift || !t.shift) && t.item !== 'Payment');
+                let existingPayTrans = transactions.find(t => t.date === currentFeedDateStr && t.cust === c.name && (t.shift === currentFeedShift || !t.shift) && t.item === 'Payment');
 
                 if (itemsToSave.length > 0) {
                     let data = { date: currentFeedDateStr, cust: c.name, item: JSON.stringify(itemsToSave), qty: '-', rate: grandTotal, total: grandTotal, company: c.company, shift: currentFeedShift };
@@ -3166,8 +3303,8 @@
         }
 
         // Standard helpers (Edit/Delete/Reset)
-        function editUser(i) { const u = users[i]; document.getElementById('uName').value = u.name; document.getElementById('uId').value = u.login_id; document.getElementById('uUsername').value = u.username || ''; document.getElementById('uPass').value = ""; let up = document.getElementById('uPass'); (up.closest('.form-group-auto') || up).classList.add('hidden'); document.getElementById('uMobile').value = u.mobile || ''; let ur = u.route; if(!ur || ur==='undefined') ur = 'Unnamed Route'; populateRouteDropdown(u.login_id); document.getElementById('uRoute').value = ur; document.getElementById('editUserIdx').value = i; document.getElementById('btnUserSave').innerText = "Update Milk Man"; }
-        function editProduct(i) { document.getElementById('pName').value = products[i].item_name; document.getElementById('pRate').value = products[i].rate; document.getElementById('pUnit').value = products[i].unit || 'Ltr'; document.getElementById('editProdIdx').value = i; document.getElementById('btnProdSave').innerText = "Update Product"; }
+        function editUser(i) { const u = users[i]; document.getElementById('uName').value = u.name; document.getElementById('uId').value = u.login_id; document.getElementById('uUsername').value = u.username || ''; document.getElementById('uPass').value = ""; let up = document.getElementById('uPass'); (up.closest('.form-group-auto') || up).classList.add('hidden'); document.getElementById('uMobile').value = u.mobile || ''; let ur = u.route; if(!ur || ur==='undefined') ur = 'Unnamed Route'; populateRouteDropdown(u.login_id); document.getElementById('uRoute').value = ur; document.getElementById('editUserIdx').value = i; document.getElementById('btnUserSave').innerText = "Update Delivery Man"; document.getElementById('user-form-section').classList.remove('hidden'); document.getElementById('btnShowNewUser').classList.add('hidden'); }
+        function editProduct(i) { document.getElementById('pName').value = products[i].item_name; document.getElementById('pRate').value = products[i].rate; document.getElementById('pUnit').value = products[i].unit || 'Ltr'; document.getElementById('editProdIdx').value = i; document.getElementById('btnProdSave').innerText = "Update Product"; document.getElementById('product-form-section').classList.remove('hidden'); document.getElementById('btnShowNewProduct').classList.add('hidden'); }
         function editRoute(i) { let rName = routes[i].route_name; if(!rName || rName==='undefined') rName=''; document.getElementById('rName').value = rName; document.getElementById('editRouteIdx').value = i; document.getElementById('btnRouteSave').innerText = "Update Route"; }
 
 
@@ -3211,6 +3348,8 @@
             renderCustItems();
             document.getElementById('editCustIdx').value = i; 
             document.getElementById('btnCustSave').innerText = "Update Customer"; 
+            document.getElementById('cust-form-section').classList.remove('hidden');
+            document.getElementById('btnShowNewCust').classList.add('hidden');
         }
         
         function editTrans(i) { 
@@ -3339,7 +3478,7 @@
                 if(document.getElementById('tItemList')) document.getElementById('tItemList').innerHTML = "";
             }
             if(type==='user') { 
-                document.getElementById('editUserIdx').value = ""; document.getElementById('btnUserSave').innerText = "Save Milk Man"; 
+                document.getElementById('editUserIdx').value = ""; document.getElementById('btnUserSave').innerText = "Save Delivery Man"; 
                 ['uName','uPass','uMobile','uRoute'].forEach(id=>document.getElementById(id).value=""); 
                 let up = document.getElementById('uPass'); (up.closest('.form-group-auto') || up).classList.remove('hidden');
                 document.getElementById('uId').value = ""; 
@@ -3387,12 +3526,18 @@
 
         async function buildStatementHTML(custName, company, reportMonth, reportYear) {
             let openingBalance = 0;
+            let currentMonthTransactions = []; // Initialize as empty array
             try {
-                const openingBalanceResponse = await fetch(`${API_BASE}/opening_balance?cust_name=${encodeURIComponent(custName)}&company=${encodeURIComponent(company)}&month=${reportMonth}&year=${reportYear}`);
-                const openingBalanceData = await openingBalanceResponse.json();
-                openingBalance = openingBalanceData.opening_balance || 0;
+                const response = await fetch(`${API_BASE}/opening_balance?cust_name=${encodeURIComponent(custName)}&company=${encodeURIComponent(company)}&month=${reportMonth}&year=${reportYear}`);
+                const data = await response.json();
+                if (data.error) {
+                    return `<p>${data.error}</p>`;
+                }
+                openingBalance = data.opening_balance || 0;
+                currentMonthTransactions = data.transactions || []; // Get transactions from the new API
             } catch (e) {
-                console.error("Error fetching opening balance:", e);
+                console.error("Error fetching statement data:", e);
+                return "<p>Error loading statement. Please check your connection.</p>";
             }
 
             let currentMonthPurchases = 0;
@@ -3400,38 +3545,64 @@
             let monthlyTransactionsHtml = '';
             let tbIndex = 0;
 
-            const currentMonthTransactions = transactions.filter(t => {
-                if (t.shift === 'General Bill') return false; // Hide General Bills from Statement
-                if(t.cust !== custName || t.company !== company) return false;
-                let dObj = parseDateToMonthYear(t.date);
-                return dObj.year === reportYear && dObj.month === reportMonth;
-            });
-
-            currentMonthTransactions.sort((a, b) => a.id - b.id).forEach(t => { 
+            let dailyData = {};
+            currentMonthTransactions.forEach(t => { 
+                let dKey = t.date.replace(/\//g, '-');
+                if (!dailyData[dKey]) dailyData[dKey] = { items: [], paid: 0, total: 0 };
+                
                 if(t.item === 'Payment') {
-                    currentMonthPaid += Math.abs(parseFloat(t.total));
-                    monthlyTransactionsHtml += `<tr style="animation-delay:${(tbIndex++) * 0.03}s"><td>${t.date}</td><td><b style="color:var(--success)">Payment Done</b></td><td>-</td><td>-</td><td style="color:var(--success)">-₹${Math.abs(parseFloat(t.total))}</td></tr>`;
+                    let pAmt = Math.abs(parseFloat(t.total));
+                    dailyData[dKey].paid += pAmt;
+                    currentMonthPaid += pAmt;
                 } else {
-                    currentMonthPurchases += parseFloat(t.total);
-                    let displayItem = formatItemDisplay(t.item);
+                    let tTotal = parseFloat(t.total);
+                    dailyData[dKey].total += tTotal;
+                    currentMonthPurchases += tTotal;
                     
-                    let dispQty = t.qty || '-';
-                    let dispRate = t.rate || '-';
+                    let itemsToProcess = [];
                     if (String(t.item || '').startsWith('[')) {
                         try {
-                            let items = JSON.parse(t.item);
-                            if (Array.isArray(items)) {
-                                let tRates = [];
-                                items.forEach(i => {
-                                    tRates.push(i.rate);
-                                });
-                                dispQty = items.length + ' Items';
-                                dispRate = tRates.join(', ');
-                            }
+                            let parsedItems = JSON.parse(t.item);
+                            if (Array.isArray(parsedItems)) itemsToProcess = parsedItems;
                         } catch(e) {}
+                    } else {
+                        itemsToProcess = [{ item: t.item, qty: t.qty, rate: t.rate, total: tTotal }];
                     }
                     
-                    monthlyTransactionsHtml += `<tr style="animation-delay:${(tbIndex++) * 0.03}s"><td>${t.date}</td><td>${displayItem}</td><td>${dispQty}</td><td>${dispRate}</td><td>₹${t.total}</td></tr>`;
+                    itemsToProcess.forEach(it => {
+                        let existingItem = dailyData[dKey].items.find(i => i.item === it.item && i.rate == it.rate);
+                        if (existingItem) {
+                            existingItem.qty += parseFloat(it.qty || 0);
+                        } else {
+                            dailyData[dKey].items.push({ item: it.item, qty: parseFloat(it.qty || 0), rate: parseFloat(it.rate || 0) });
+                        }
+                    });
+                }
+            });
+
+            let sortedDates = Object.keys(dailyData).sort((a, b) => {
+                let pA = a.split('-'); let dateA = pA.length === 3 ? (pA[2].length===4 ? pA[2]+pA[1]+pA[0] : pA[0]+pA[1]+pA[2]) : a;
+                let pB = b.split('-'); let dateB = pB.length === 3 ? (pB[2].length===4 ? pB[2]+pB[1]+pB[0] : pB[0]+pB[1]+pB[2]) : b;
+                return dateA.localeCompare(dateB);
+            });
+
+            sortedDates.forEach(date => {
+                let dayData = dailyData[date];
+                if (dayData.items.length > 0) {
+                    let dispQty, dispRate, displayItem;
+                    if (dayData.items.length === 1) {
+                        displayItem = dayData.items[0].item;
+                        dispQty = dayData.items[0].qty;
+                        dispRate = dayData.items[0].rate;
+                    } else {
+                        displayItem = dayData.items.map(i => `${i.item} <span style="color:#94a3b8">(${i.qty})</span>`).join(', ');
+                        dispQty = dayData.items.length + ' Items';
+                        dispRate = dayData.items.map(i => i.rate).join(', ');
+                    }
+                    monthlyTransactionsHtml += `<tr style="animation-delay:${(tbIndex++) * 0.03}s"><td>${date}</td><td>${displayItem}</td><td>${dispQty}</td><td>${dispRate}</td><td>₹${dayData.total.toFixed(2)}</td></tr>`;
+                }
+                if (dayData.paid > 0) {
+                    monthlyTransactionsHtml += `<tr style="animation-delay:${(tbIndex++) * 0.03}s"><td>${date}</td><td><b style="color:var(--success)">Payment Done</b></td><td>-</td><td>-</td><td style="color:var(--success)">-₹${dayData.paid.toFixed(2)}</td></tr>`;
                 }
             });
 
@@ -3613,7 +3784,7 @@
                 if(t.item === 'Payment') summary[t.cust].paid += Math.abs(parseFloat(t.total));
                 else summary[t.cust].purchases += parseFloat(t.total);
             });
-            let html = `<table><thead><tr><th>Customer</th><th>Total Bill</th><th>Total Paid</th><th>Balance Due</th><th>Action</th></tr></thead><tbody>`;
+            let html = `<table><thead><tr><th>Customer</th><th>Total Bill</th><th>Total Paid</th><th>Balance Due</th><th>Action</th></tr></thead><tbody id="accTableBody">`;
             let accIndex = 0;
             for(let c in summary) {
                 let bal = summary[c].purchases - summary[c].paid;
@@ -3635,11 +3806,12 @@
             document.getElementById('tabTrans').classList.toggle('active-tab', type === 'trans');
             
             if(type === 'cust') {
+                closeCustForm();
                 let custFilterSel = document.getElementById('filterCustMilkManSelect');
                 if (currentUser && currentUser.type !== 'Milk Man' && currentUser.type !== 'Customer') {
                     custFilterSel.classList.remove('hidden');
                     let oldVal = custFilterSel.value;
-                    custFilterSel.innerHTML = '<option value="">-- All Milk Men / View All --</option>';
+                    custFilterSel.innerHTML = '<option value="">-- All Delivery Men / View All --</option>';
                     users.filter(u => u.type === 'Milk Man').forEach(u => { custFilterSel.innerHTML += `<option value="${u.login_id}">${u.name} (${u.login_id})</option>`; });
                     custFilterSel.value = oldVal;
                 } else if(custFilterSel) {
@@ -3650,7 +3822,7 @@
                 if (currentUser && currentUser.type !== 'Milk Man' && currentUser.type !== 'Customer') {
                     filterSel.classList.remove('hidden');
                     let oldVal = filterSel.value;
-                    filterSel.innerHTML = '<option value="">-- All Milk Men / View All --</option>';
+                    filterSel.innerHTML = '<option value="">-- All Delivery Men / View All --</option>';
                     users.filter(u => u.type === 'Milk Man').forEach(u => { filterSel.innerHTML += `<option value="${u.login_id}">${u.name} (${u.login_id})</option>`; });
                     filterSel.value = oldVal;
                 } else if(filterSel) {
@@ -3793,6 +3965,7 @@
                 if(!currentUser.company) currentUser.company = 'Default';
                 
                 users = []; customers = []; transactions = []; products = []; requests = []; routes = [];
+                if (currentUser.type === 'Customer') customers.push(currentUser);
                 populateProductDropdowns();
                 setupUI();
                 
@@ -3813,7 +3986,7 @@
                 syncToast.innerHTML = '<span>🔄 Loading live data...</span>';
                 document.getElementById('toast-container').appendChild(syncToast);
                 
-                fetchBackgroundData();
+                fetchBackgroundData(true);
             } else if(session) {
                 showView('loading-screen');
                 const auth = JSON.parse(session);
