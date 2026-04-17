@@ -2826,7 +2826,11 @@
             let prefix = document.getElementById('lPrefix').value.trim().toUpperCase(); if (prefix) prefix += '-';
             const randomPart = () => Math.random().toString(36).substring(2, 6).toUpperCase();
             const keyCode = prefix + randomPart() + '-' + randomPart() + '-' + randomPart();
-            const btn = window.event.target; const originalText = btn.innerText; btn.innerText = "Creating..."; btn.disabled = true;
+            
+            const btn = window.event ? window.event.target : null; 
+            let originalText = "Generate Key"; 
+            if(btn) { originalText = btn.innerText; btn.innerText = "Creating..."; btn.disabled = true; }
+            
             let data = { key_code: keyCode, duration_days: duration, status: 'Active', used_by: '', company: currentUser.company || 'Admin' };
             try {
                 const res = await fetch(`${API_BASE}/licenses`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
@@ -2835,7 +2839,7 @@
             } catch(e) {
                 data.id = Math.floor(Math.random() * 10000); licenses.push(data); renderLicenses(); document.getElementById('license-form-section').classList.add('hidden'); alert(`Generated Key: ${keyCode}\n(Saved Locally)`, 'success');
             }
-            btn.innerText = originalText; btn.disabled = false;
+            if(btn) { btn.innerText = originalText; btn.disabled = false; }
         }
 
         // Format JSON Items array into readable string
