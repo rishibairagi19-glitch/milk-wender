@@ -135,6 +135,12 @@
         .faq-icon { transition: transform 0.3s; font-size: 12px; }
         :root.light-mode .faq-item { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
         :root.light-mode .faq-answer { color: #475569; }
+
+        /* Profile Menu List */
+        .profile-list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.2s; }
+        .profile-list-item:hover { background: rgba(99, 102, 241, 0.1); }
+        .profile-list-item:last-child { border-bottom: none; }
+        :root.light-mode .profile-list-item { border-bottom: 1px solid rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
@@ -169,7 +175,9 @@
         <button onclick="showView('profile-view'); closeProfileDropdown()" style="background: transparent; color: var(--text); padding: 12px 20px; text-align: left; border-radius: 0; border-bottom: 1px solid #334155; width: 100%; border-top: none; border-left: none; border-right: none;">👤 1. Profile</button>
         <button id="lang-btn" onclick="changeLanguage(); closeProfileDropdown()" style="background: transparent; color: var(--text); padding: 12px 20px; text-align: left; border-radius: 0; border-bottom: 1px solid #334155; width: 100%; border-top: none; border-left: none; border-right: none;">🌐 2. Language (हिंदी)</button>
         <button id="btn-help-dropdown" onclick="openHelpModal(); closeProfileDropdown()" style="background: transparent; color: var(--text); padding: 12px 20px; text-align: left; border-radius: 0; border-bottom: 1px solid #334155; width: 100%; border-top: none; border-left: none; border-right: none;">🆘 3. Need Help?</button>
-        <button onclick="logout()" style="background: transparent; color: var(--danger); padding: 12px 20px; text-align: left; border-radius: 0; width: 100%; border: none;">🚪 4. Logout</button>
+        <button id="btn-share-app" onclick="shareApp(); closeProfileDropdown()" style="background: transparent; color: var(--text); padding: 12px 20px; text-align: left; border-radius: 0; border-bottom: 1px solid #334155; width: 100%; border-top: none; border-left: none; border-right: none;">📤 4. Share App</button>
+        <button id="btn-dropdown-req" class="hidden" onclick="showView('request-master'); closeProfileDropdown()" style="background: transparent; color: var(--text); padding: 12px 20px; text-align: left; border-radius: 0; border-bottom: 1px solid #334155; width: 100%; border-top: none; border-left: none; border-right: none;">📝 Customer Requests</button>
+        <button onclick="logout()" style="background: transparent; color: var(--danger); padding: 12px 20px; text-align: left; border-radius: 0; width: 100%; border: none;">🚪 5. Logout</button>
     </div>
 
     <!-- LANDING PAGE -->
@@ -295,33 +303,51 @@
 
     <!-- MY PROFILE VIEW -->
     <div id="profile-view" class="container hidden">
-        <h2>👤 My Profile</h2>
-        <div style="display:flex; flex-direction:column; align-items:center; margin-bottom: 20px;">
-            <img id="profPicPreview" src="https://via.placeholder.com/100" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid var(--primary); margin-bottom:10px; cursor:pointer;" onclick="document.getElementById('profPicInput').click()" title="Click to change picture">
-            <input type="file" id="profPicInput" accept="image/*" style="display:none;" onchange="handleProfPic(event)">
-            <button id="btnChangePic" class="badge" style="background:var(--primary); font-size: 14px; padding: 6px 12px; margin-bottom: 10px;" onclick="document.getElementById('profPicInput').click()">📷 Change Picture</button>
-        </div>
-        <div id="owner-qr-section" class="hidden" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align:center;">
-             <h3 style="margin-top:0; margin-bottom:10px; font-size: 16px;">💳 Payment QR Code</h3>
-             <img id="qrCodePreview" src="https://via.placeholder.com/150" style="width:150px; height:150px; border-radius:10px; object-fit:cover; border:3px solid var(--primary); margin-bottom:10px;">
-             <input type="file" id="qrCodeInput" accept="image/*" style="display:none;" onchange="handleQrCodePic(event)">
-             <button id="btnChangeQr" class="badge hidden" style="background:var(--primary); font-size: 14px; padding: 6px 12px;" onclick="document.getElementById('qrCodeInput').click()">📷 Change QR Code</button>
-        </div>
-        <div class="grid-form">
-            <input type="text" id="profId" readonly style="opacity:0.6; cursor:not-allowed;" title="User ID">
-            <input type="text" id="profUsername" placeholder="Login Username (Optional)">
-            <input type="text" id="profName" placeholder="Full Name" required>
-            <div id="profPassWrapper" style="position:relative;"> 
-                <input type="password" id="profPass" placeholder="New Password (leave blank to keep current)" style="margin:0; padding-right:35px;">
-                <span onclick="togglePasswordVisibility('profPass', 'profEye')" id="profEye" style="position:absolute; right:12px; top:10px; cursor:pointer;">👁️</span>
+        <h2 style="margin-bottom: 20px;">👤 My Profile</h2>
+        
+        <!-- Main Header -->
+        <div style="text-align:center; padding-bottom: 20px;">
+            <div style="position:relative; display:inline-block;">
+                <img id="mainProfilePic" src="https://via.placeholder.com/100" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid var(--primary); background: white;">
+                <div style="position:absolute; bottom:0; right:0; background:var(--primary); width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; border:2px solid var(--card);" onclick="openMediaManager('profile')" title="Change Picture">📷</div>
             </div>
-            <input type="text" id="profMobile" placeholder="Mobile Number" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" required>
-            <input type="email" id="profEmail" placeholder="Email ID">
-            <input type="text" id="profAddr" placeholder="Address">
+            <h3 style="margin:10px 0 5px 0; color:var(--text); font-size: 20px;" id="mainProfileName">Name</h3>
+            <p style="margin:0; color:var(--primary); font-weight:bold; font-size: 14px;" id="mainProfileRole">Role</p>
         </div>
-        <button id="btnEditProfile" class="btn-save" style="background:var(--warning); color:black;" onclick="enableProfileEdit()">Edit Profile</button>
-        <button id="btnSaveProfile" class="btn-save hidden" onclick="saveProfile()">Update Profile</button>
-        <button class="btn-back" style="border-color:var(--danger); color:var(--danger); margin-top:15px;" onclick="logout()">Logout / Change User</button>
+        
+        <!-- Profile Details List -->
+        <div style="display:flex; flex-direction:column; background:rgba(0,0,0,0.2); border-radius:12px; border:1px solid #475569; overflow:hidden; margin-bottom: 20px;">
+            <div class="profile-list-item" onclick="openEditField('name', 'Full Name', 'text')">
+                <div style="flex:1;"><span style="font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Full Name</span><br><b id="lbl-name" style="font-size:15px; color:var(--text);">...</b></div>
+                <span style="color:var(--primary); font-size:18px;">✎</span>
+            </div>
+            <div class="profile-list-item" onclick="openEditField('username', 'Username', 'text')">
+                <div style="flex:1;"><span style="font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Username</span><br><b id="lbl-username" style="font-size:15px; color:var(--text);">...</b></div>
+                <span style="color:var(--primary); font-size:18px;">✎</span>
+            </div>
+            <div class="profile-list-item" onclick="openEditField('mobile', 'Mobile Number', 'tel')">
+                <div style="flex:1;"><span style="font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Mobile Number</span><br><b id="lbl-mobile" style="font-size:15px; color:var(--text);">...</b></div>
+                <span style="color:var(--primary); font-size:18px;">✎</span>
+            </div>
+            <div class="profile-list-item" id="row-email" onclick="openEditField('email', 'Email ID', 'email')">
+                <div style="flex:1;"><span style="font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Email ID</span><br><b id="lbl-email" style="font-size:15px; color:var(--text);">...</b></div>
+                <span style="color:var(--primary); font-size:18px;">✎</span>
+            </div>
+            <div class="profile-list-item" id="row-addr" onclick="openEditField('addr', 'Address', 'text')">
+                <div style="flex:1;"><span style="font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Address</span><br><b id="lbl-addr" style="font-size:15px; color:var(--text);">...</b></div>
+                <span style="color:var(--primary); font-size:18px;">✎</span>
+            </div>
+            <div class="profile-list-item" id="row-pass" onclick="openEditField('pass', 'Password', 'password')">
+                <div style="flex:1;"><span style="font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Password</span><br><b style="font-size:15px; color:var(--text);">********</b></div>
+                <span style="color:var(--primary); font-size:18px;">✎</span>
+            </div>
+            <div class="profile-list-item" onclick="openMediaManager()">
+                <div style="flex:1;"><span style="font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Media & QR Codes</span><br><b style="font-size:15px; color:var(--text);">Manage Pictures</b></div>
+                <span style="color:var(--primary); font-size:18px;">🖼️</span>
+            </div>
+        </div>
+        
+        <button class="btn-back" style="border-color:var(--danger); color:var(--danger);" onclick="logout()">Logout / Switch User</button>
     </div>
 
     <div id="user-master" class="container hidden">
@@ -413,7 +439,7 @@
             <div style="display:flex; gap:10px; margin-bottom: 15px; background:rgba(0,0,0,0.15); padding:8px; border-radius:10px;">
                 <!-- NEW TABS FOR ENTRIES VIEW -->
                 <button id="tabTransFeed" class="btn-tab active-tab" style="flex:1; margin:0; font-size:13px;" onclick="switchLedgerTransTab('feed')">🗓️ Daily Feed</button>
-                <button id="tabTransAll" class="btn-tab" style="flex:1; margin:0; font-size:13px;" onclick="switchLedgerTransTab('all')">📊 All Trans</button>
+                <button id="tabTransAll" class="btn-tab" style="flex:1; margin:0; font-size:13px;" onclick="switchLedgerTransTab('all')">✅ Completed</button>
             </div>
 
             <div id="trans-tab-feed">
@@ -443,10 +469,9 @@
             </div>
             
             <div id="trans-tab-all" class="hidden">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
-                    <h3 style="margin:0;">All Transactions</h3>
-                    <input type="text" id="searchTransAll" placeholder="🔍 Search Entry..." onkeyup="searchTable(this, 'transTableBody')" style="flex:1; min-width:150px; max-width:300px; padding:8px; margin:0; border-radius:8px;">
-                    <button class="btn-save" style="width:auto; padding:8px 15px;" onclick="openNewTransModal()">➕ New Entry</button>
+                <div style="display:flex; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+                    <label for="transAllDate" style="font-weight:bold; color:var(--primary);">Select Date:</label>
+                    <input type="date" id="transAllDate" onchange="renderTrans()" style="padding:8px; margin:0; flex:1; max-width:180px;">
                 </div>
                 <table><thead><tr><th>Date</th><th>Customer</th><th>Item</th><th>Total</th><th>Actions</th></tr></thead><tbody id="transTableBody"></tbody></table>
             </div>
@@ -595,14 +620,14 @@
                 <button class="badge" style="background:var(--primary); padding: 8px 12px; font-size:14px;" onclick="changeSelfMonth(1)">Next ➡️</button>
                 <button class="btn-save" style="background:var(--warning); color:black; padding: 8px 15px; width:auto; margin-left:auto;" onclick="downloadSelfReport()">🖨️ Download Report</button>
             </div>
-            <div id="self-ledger-data"></div>
+            <div id="self-ledger-data" style="max-height: 55vh; overflow-y: auto; overflow-x: auto; padding-right: 5px;"></div>
         </div>
 
         <!-- TAB: MY ORDER -->
         <div id="self-tab-order" class="hidden">
             <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                 <h3 style="margin-bottom:10px; font-size: 16px;">🛒 My Daily Milk/Item Requirements</h3>
-                <ul id="selfItemList" style="font-size:13px; color:var(--text); padding-left:20px; margin-bottom:10px;"></ul>
+                <ul id="selfItemList" style="font-size:13px; color:var(--text); padding-left:20px; margin-bottom:10px; max-height: 150px; overflow-y: auto; padding-right: 5px;"></ul>
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; align-items:flex-end;">
                     <select id="selfItemAdd" style="flex:1; min-width:120px; padding:8px; border-radius:8px; background:var(--input); color:white; border:1px solid #475569;" onchange="autoFillSelfProductRate()"></select>
                     <input type="number" id="selfQtyAdd" placeholder="Qty" style="width:70px; padding:8px; border-radius:8px; background:var(--input); color:white; border:1px solid #475569;">
@@ -642,7 +667,7 @@
                     <button class="btn-save" style="width:auto;" onclick="saveRequest()">Send Request</button>
                 </div>
                 <p style="font-size:12px; color:#94a3b8; margin-top:10px; margin-bottom:5px;">Your past requests:</p>
-                <ul id="custRequestList" style="font-size:13px; color:var(--text); padding-left:20px; margin:0;"></ul>
+                <ul id="custRequestList" style="font-size:13px; color:var(--text); padding-left:20px; margin:0; max-height: 150px; overflow-y: auto; padding-right: 5px;"></ul>
             </div>
         </div>
 
@@ -670,7 +695,7 @@
                     <button class="btn-save" style="background:var(--success);" onclick="submitPayment()">Submit Payment</button>
                 </div>
                 <p style="font-size:12px; color:#94a3b8; margin-top:10px; margin-bottom:5px;">Your submitted payments (pending approval):</p>
-                <ul id="custPaymentList" style="font-size:13px; color:var(--text); padding-left:20px; margin:0;"></ul>
+                <ul id="custPaymentList" style="font-size:13px; color:var(--text); padding-left:20px; margin:0; max-height: 150px; overflow-y: auto; padding-right: 5px;"></ul>
             </div>
         </div>
     </div>
@@ -721,7 +746,7 @@
 
                 <div id="editTransPaymentSection" class="hidden" style="margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid #475569;">
                     <label style="font-size:12px; color:var(--success); font-weight:bold;">Payment Amount (₹)</label>
-                    <input type="number" id="tPaymentAmt" placeholder="Amount" style="margin-top:5px;" oninput="document.getElementById('tTotalDisplay').innerText = 'Total: ₹' + this.value">
+                    <input type="number" id="tPaymentAmt" placeholder="Amount" style="margin-top:5px;" oninput="document.getElementById('tTotalDisplay').innerText = 'Total: ₹' + (parseFloat(this.value) || 0).toFixed(2)">
                 </div>
 
                 <div id="tTotalDisplay" style="display:flex; align-items:center; font-weight:bold; color:var(--success); margin-top:15px; font-size:18px;">Total: ₹0</div>
@@ -775,6 +800,57 @@
                     <p style="margin: 4px 0;">Harish Kumawat: <a href="tel:9425976804" style="color: var(--text); text-decoration: underline; font-weight: bold;">9425976804</a></p>
                     <p style="margin: 4px 0;">Email: <a href="mailto:hkexpertmds@gmail.com" style="color: var(--primary); text-decoration: none; font-weight: bold;">hkexpertmds@gmail.com</a></p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT PROFILE FIELD MODAL -->
+    <div id="editFieldModal" class="hidden" style="position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10005; display:flex; justify-content:center; align-items:center; padding:20px;">
+        <div class="modal-box" style="background:var(--card); width:100%; max-width:400px; padding:25px; border-radius:16px; border:1px solid #475569;">
+            <h3 id="editFieldTitle" style="margin-top:0; margin-bottom: 15px; color:var(--primary);">Edit Field</h3>
+            <input type="hidden" id="editFieldKey">
+            <div style="position:relative; margin-bottom: 20px;">
+                <input type="text" id="editFieldValue" style="width:100%; margin:0;" required>
+                <span id="editFieldEye" onclick="togglePasswordVisibility('editFieldValue', 'editFieldEye')" class="hidden" style="position:absolute; right:12px; top:12px; cursor:pointer; user-select:none; font-size:16px;">👁️</span>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-save" id="btnSaveField" onclick="saveSingleProfileField()">Update & Save</button>
+                <button class="btn-back" style="margin:0;" onclick="closeEditFieldModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MEDIA MANAGER MODAL -->
+    <div id="mediaManagerModal" class="hidden" style="position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10004; display:flex; justify-content:center; align-items:center; padding:20px;">
+        <div class="modal-box" style="background:var(--card); width:100%; max-width:450px; padding:25px; border-radius:16px; border:1px solid #475569; max-height:90vh; overflow-y:auto;">
+            <h3 style="margin-top:0; margin-bottom: 5px; color:var(--primary);">🖼️ Manage Pictures</h3>
+            <p style="font-size:12px; color:#94a3b8; margin-top:0; margin-bottom:20px;">Tap on any image to crop & change it.</p>
+            
+            <div style="display:flex; flex-direction:column; gap:20px;">
+                <div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; text-align:center; border:1px dashed #475569;">
+                    <h4 style="margin:0 0 10px 0; color:var(--text); font-size:14px;">Profile Picture</h4>
+                    <img id="mmProfilePic" src="https://via.placeholder.com/100" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:2px solid var(--primary); cursor:pointer; background:white;" onclick="document.getElementById('mmProfileInput').click()">
+                    <input type="file" id="mmProfileInput" accept="image/*" class="hidden" onchange="handlePicUpload(event, 'profile')">
+                </div>
+
+                <div id="mmOwnerSection" class="hidden" style="display:flex; flex-direction:column; gap:20px;">
+                    <div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; text-align:center; border:1px dashed #475569;">
+                        <h4 style="margin:0 0 5px 0; color:var(--text); font-size:14px;">Payment QR Code</h4>
+                        <p style="font-size:11px; color:#94a3b8; margin:0 0 10px 0;">Customers scan this to pay you.</p>
+                        <img id="mmQrPic" src="https://via.placeholder.com/150" style="width:150px; height:150px; border-radius:10px; object-fit:cover; border:2px solid var(--success); cursor:pointer; background:white;" onclick="document.getElementById('mmQrInput').click()">
+                        <input type="file" id="mmQrInput" accept="image/*" class="hidden" onchange="handlePicUpload(event, 'qr')">
+                    </div>
+                    <div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; text-align:center; border:1px dashed #475569;">
+                        <h4 style="margin:0 0 5px 0; color:var(--text); font-size:14px;">Company Logo</h4>
+                        <p style="font-size:11px; color:#94a3b8; margin:0 0 10px 0;">This logo will appear on your printed bills.</p>
+                        <img id="mmLogoPic" src="https://via.placeholder.com/150" style="width:150px; height:100px; border-radius:10px; object-fit:contain; border:2px solid var(--warning); cursor:pointer; background:white;" onclick="document.getElementById('mmLogoInput').click()">
+                        <input type="file" id="mmLogoInput" accept="image/*" class="hidden" onchange="handlePicUpload(event, 'logo')">
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn-save" id="btnSaveMedia" onclick="saveMediaPictures()">Save Changes</button>
+                <button class="btn-back" style="margin:0;" onclick="closeMediaManager()">Close</button>
             </div>
         </div>
     </div>
@@ -853,9 +929,15 @@
         }
         function convertToDDMMYYYY(yyyy_mm_dd) {
             if(!yyyy_mm_dd) return "";
-            let p = yyyy_mm_dd.split('-');
-            if(p.length === 3 && p[0].length === 4) return `${p[2]}-${p[1]}-${p[0]}`;
-            return yyyy_mm_dd;
+            let date_str = yyyy_mm_dd.toString().trim().replace(/\//g, '-');
+            let p = date_str.split('-');
+            if(p.length === 3) {
+                let y, m, d;
+                if(p[0].length === 4) { y = p[0]; m = p[1]; d = p[2]; }
+                else { d = p[0]; m = p[1]; y = p[2]; }
+                return `${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}-${y}`;
+            }
+            return date_str;
         }
 
 
@@ -1036,6 +1118,25 @@
             }
         }
 
+        function shareApp() {
+            const shareData = {
+                title: 'Dairy Ledger App',
+                text: 'Check out Dairy Ledger, the smart way to manage dairy deliveries and accounts!',
+                url: window.location.origin + window.location.pathname
+            };
+            if (navigator.share) {
+                navigator.share(shareData).catch((err) => {
+                    if(err.name !== "AbortError") console.error("Share failed:", err.message);
+                });
+            } else {
+                navigator.clipboard.writeText(shareData.url).then(() => {
+                    alert("App link copied to clipboard!", "success");
+                }).catch(err => {
+                    alert("Failed to copy link.", "error");
+                });
+            }
+        }
+
         const enFaqs = `<div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>❌ Login Failed / Wrong ID Password?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Please ensure you have selected the correct Role (Owner, Delivery Man, Customer). Check your ID and Password. If you forgot your password, contact your Owner.</div></div>
         <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>🌐 Connection Failed / Network Error?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Check your internet connection. If you are on a local computer, ensure the Backend server (Python) is running.</div></div>
         <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>📅 How to pause/change tomorrow's order?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Go to your Customer dashboard, select the "My Order" (🛒) tab, choose tomorrow's date in "One-Time Change" and update the quantity to 0 or your desired amount, then save.</div></div>
@@ -1071,11 +1172,13 @@
                 'btn-manual-bill': '<span style="font-size:28px; margin-bottom:8px;">🧾</span>General Bill',
                 'btn-self': '<span style="font-size:24px; margin:0;">📈</span>View Detailed My Report',
                 'tabCust': 'Customers', 'tabTrans': 'Entries',
-                'tabTransFeed': '🗓️ Daily Feed', 'tabTransAll': '📊 All Trans',
+                'tabTransFeed': '🗓️ Daily Feed', 'tabTransAll': '✅ Completed',
                 'btnShiftM': '🌅 Morning', 'btnShiftE': '🌃 Evening',
                 'tabSelfStatement': '📊 Statement', 'tabSelfOrder': '🛒 My Order', 'tabSelfReq': '💬 Requests', 'tabSelfPay': '💸 Payment',
                 'btn-help-dropdown': '🆘 3. Need Help?',
+                'btn-share-app': '📤 4. Share App',
                 'btn-help-landing': '🆘 Need Help?',
+                'btn-dropdown-req': '📝 Customer Requests',
                 'help-modal-title': '🆘 Help & Support',
                 'help-modal-intro': 'Solutions to common problems are given below. Click on any question to expand:',
                 'help-faq-container': enFaqs,
@@ -1093,11 +1196,13 @@
                 'btn-manual-bill': '<span style="font-size:28px; margin-bottom:8px;">🧾</span>जनरल बिल',
                 'btn-self': '<span style="font-size:24px; margin:0;">📈</span>मेरी रिपोर्ट देखें',
                 'tabCust': 'कस्टमर्स', 'tabTrans': 'एंट्री',
-                'tabTransFeed': '🗓️ डेली एंट्री', 'tabTransAll': '📊 सभी एंट्री',
+                'tabTransFeed': '🗓️ डेली एंट्री', 'tabTransAll': '✅ Completed',
                 'btnShiftM': '🌅 सुबह', 'btnShiftE': '🌃 शाम',
                 'tabSelfStatement': '📊 मेरा खाता', 'tabSelfOrder': '🛒 मेरा ऑर्डर', 'tabSelfReq': '💬 मैसेज', 'tabSelfPay': '💸 पेमेंट',
                 'btn-help-dropdown': '🆘 3. मदद (Need Help)',
+                'btn-share-app': '📤 4. ऐप शेयर करें (Share App)',
                 'btn-help-landing': '🆘 मदद चाहिए?',
+                'btn-dropdown-req': '📝 कस्टमर रिक्वेस्ट',
                 'help-modal-title': '🆘 मदद और सपोर्ट',
                 'help-modal-intro': 'आम तौर पर आने वाली समस्याओं के समाधान नीचे दिए गए हैं। किसी भी प्रश्न पर क्लिक करें:',
                 'help-faq-container': hiFaqs,
@@ -1143,7 +1248,9 @@
             setHtml('tabSelfPay', dict['tabSelfPay']);
 
             setHtml('btn-help-dropdown', dict['btn-help-dropdown']);
+            setHtml('btn-share-app', dict['btn-share-app']);
             setHtml('btn-help-landing', dict['btn-help-landing']);
+            setHtml('btn-dropdown-req', dict['btn-dropdown-req']);
             setHtml('help-modal-title', dict['help-modal-title']);
             setHtml('help-modal-intro', dict['help-modal-intro']);
             setHtml('help-faq-container', dict['help-faq-container']);
@@ -1193,66 +1300,102 @@
         let cropper; // Global variable for Cropper instance
         let currentProfilePicBase64 = "";
         let currentQrCodeBase64 = "";
+        let currentCompanyLogoBase64 = "";
         let currentCropTarget = "qr";
 
-        function handleProfPic(e) {
-            const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                currentCropTarget = "profile";
-                document.getElementById('cropModalTitle').innerText = "Crop Profile Picture";
-                document.getElementById('qrCropImage').src = evt.target.result;
-                document.getElementById('qrCropModal').classList.remove('hidden');
-                if (cropper) cropper.destroy();
-                cropper = new Cropper(document.getElementById('qrCropImage'), { aspectRatio: 1, viewMode: 1, autoCropArea: 0.8, background: false });
-            };
-            reader.readAsDataURL(file);
-            e.target.value = '';
-        }
-
-        function handleQrCodePic(e) {
+        function handlePicUpload(e, target) {
             const file = e.target.files[0];
             if(!file) return;
 
             const reader = new FileReader();
             reader.onload = function(evt) {
-                currentCropTarget = "qr";
-                document.getElementById('cropModalTitle').innerText = "Crop QR Code";
+                currentCropTarget = target;
+                let title = target === 'profile' ? "Crop Profile Picture" : (target === 'qr' ? "Crop Payment QR" : "Crop Company Logo");
+                document.getElementById('cropModalTitle').innerText = title;
+                
                 const qrCropImage = document.getElementById('qrCropImage');
                 qrCropImage.src = evt.target.result;
 
-                // Open the modal
                 document.getElementById('qrCropModal').classList.remove('hidden');
 
-                // Initialize Cropper.js
-                if (cropper) {
-                    cropper.destroy();
-                }
+                if (cropper) cropper.destroy();
+                let aspectRatio = target === 'logo' ? NaN : 1; // Free crop for logo, Square for others
                 cropper = new Cropper(qrCropImage, {
-                    aspectRatio: 1, // Square aspect ratio for QR codes
-                    viewMode: 1, // Restrict the crop box to not exceed the canvas
-                    autoCropArea: 0.8, // Initial crop area percentage
-                    background: false // Hide the grid background
+                    aspectRatio: aspectRatio,
+                    viewMode: 1,
+                    autoCropArea: 0.8,
+                    background: false
                 });
             };
             reader.readAsDataURL(file);
             e.target.value = '';
         }
 
+        function openMediaManager(defaultTarget = null) {
+            currentProfilePicBase64 = currentUser.profile_pic || '';
+            document.getElementById('mmProfilePic').src = currentProfilePicBase64 || 'https://via.placeholder.com/100';
+            
+            if (currentUser.type === 'Owner') {
+                currentQrCodeBase64 = currentUser.qr_code || '';
+                currentCompanyLogoBase64 = currentUser.company_logo || '';
+                document.getElementById('mmQrPic').src = currentQrCodeBase64 || 'https://via.placeholder.com/150';
+                document.getElementById('mmLogoPic').src = currentCompanyLogoBase64 || 'https://via.placeholder.com/150';
+                document.getElementById('mmOwnerSection').classList.remove('hidden');
+            } else {
+                document.getElementById('mmOwnerSection').classList.add('hidden');
+            }
+            document.getElementById('mediaManagerModal').classList.remove('hidden');
+            if (defaultTarget) document.getElementById('mm' + defaultTarget.charAt(0).toUpperCase() + defaultTarget.slice(1) + 'Input').click();
+        }
+        function closeMediaManager() { document.getElementById('mediaManagerModal').classList.add('hidden'); }
+
+        async function saveMediaPictures() {
+            const btn = document.getElementById('btnSaveMedia');
+            btn.innerText = "Saving...";
+            
+            let data = { ...currentUser };
+            data.profile_pic = currentProfilePicBase64;
+            
+            if (currentUser.type === 'Owner') {
+                data.qr_code = currentQrCodeBase64;
+                data.company_logo = currentCompanyLogoBase64;
+            }
+
+            let table = currentUser.type === 'Customer' ? 'customers' : 'users';
+            try {
+                const res = await fetch(`${API_BASE}/${table}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                const saved = await res.json();
+                if (saved.success === false) { alert(saved.message); btn.innerText = "Save Changes"; return; }
+                
+                currentUser = { ...data, ...saved };
+                localStorage.setItem('sessionUser', JSON.stringify(currentUser));
+                
+                showView('profile-view');
+                closeMediaManager();
+                alert("Pictures Saved Successfully!", "success");
+                setupUI();
+            } catch(e) { alert("Error saving pictures!"); }
+            btn.innerText = "Save Changes";
+        }
+
         function cropQrCode() {
             if (cropper) {
-                const croppedCanvas = cropper.getCroppedCanvas({ width: 200, height: 200, fillColor: '#fff' });
+                let width = currentCropTarget === 'logo' ? 300 : 200;
+                let height = currentCropTarget === 'logo' ? 150 : 200;
+
+                const croppedCanvas = cropper.getCroppedCanvas({ width: width, height: height, fillColor: '#fff' });
                 const croppedBase64 = croppedCanvas.toDataURL('image/png');
                 if (currentCropTarget === 'profile') {
                     currentProfilePicBase64 = croppedBase64;
-                    document.getElementById('profPicPreview').src = currentProfilePicBase64;
-                } else {
+                    document.getElementById('mmProfilePic').src = currentProfilePicBase64;
+                    document.getElementById('mainProfilePic').src = currentProfilePicBase64; 
+                } else if (currentCropTarget === 'qr') {
                     currentQrCodeBase64 = croppedBase64;
-                    document.getElementById('qrCodePreview').src = currentQrCodeBase64;
+                    document.getElementById('mmQrPic').src = currentQrCodeBase64;
+                } else {
+                    currentCompanyLogoBase64 = croppedBase64;
+                    document.getElementById('mmLogoPic').src = currentCompanyLogoBase64;
                 }
-                document.getElementById('btnSaveProfile').classList.remove('hidden');
-                document.getElementById('btnEditProfile').classList.add('hidden');
                 closeQrCropModal();
             }
         }
@@ -1263,55 +1406,45 @@
                 cropper.destroy();
                 cropper = null;
             }
-            // Clear the file input to allow re-selection of the same file
-            document.getElementById('qrCodeInput').value = '';
-        if(document.getElementById('profPicInput')) document.getElementById('profPicInput').value = '';
         }
 
-        async function saveProfile() {
-            if (!validateForm('profile-view')) return;
-            let btn = document.getElementById('btnSaveProfile'); if(btn) btn.innerText = "Updating...";
+        function openEditField(key, title, type) {
+            document.getElementById('editFieldTitle').innerText = 'Edit ' + title;
+            document.getElementById('editFieldKey').value = key;
+            document.getElementById('editFieldValue').type = type;
+            document.getElementById('editFieldValue').value = (key === 'pass' || key === 'cpass') ? '' : (currentUser[key === 'addr' && currentUser.type !== 'Customer' ? 'address' : key] || '');
+            document.getElementById('editFieldEye').classList.toggle('hidden', type !== 'password');
+            document.getElementById('editFieldModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('editFieldValue').focus(), 100);
+        }
+        function closeEditFieldModal() { document.getElementById('editFieldModal').classList.add('hidden'); }
+
+        async function saveSingleProfileField() {
+            const key = document.getElementById('editFieldKey').value;
+            const val = document.getElementById('editFieldValue').value.trim();
+            const btn = document.getElementById('btnSaveField');
+            
+            if (key !== 'pass' && key !== 'cpass' && !val && key !== 'username' && key !== 'email') { return alert("This field cannot be empty!"); }
+            if (key === 'mobile' && val.length !== 10) { return alert("Mobile Number must be exactly 10 digits!"); }
+
+            btn.innerText = "Updating...";
             let data = { ...currentUser };
-            data.username = document.getElementById('profUsername').value.trim();
-            data.name = document.getElementById('profName').value;
-            data.profile_pic = currentProfilePicBase64;
-            data.mobile = document.getElementById('profMobile').value;
             
-            if (data.mobile && data.mobile.length !== 10) {
-                alert("Mobile Number must be exactly 10 digits!");
-                btn.innerText = "Update Profile";
-                return;
-            }
+            let actualKey = key;
+            if (key === 'addr' && currentUser.type !== 'Customer') actualKey = 'address';
+            if (key === 'pass' && currentUser.type === 'Customer') actualKey = 'cpass';
             
-            let table = 'users';
-            if (currentUser.type === 'Customer') {
-                table = 'customers';
-                data.addr = document.getElementById('profAddr').value;
-            } else {
-                data.pass = document.getElementById('profPass').value;
-                if(currentUser.type === 'Owner' || currentUser.type === 'Admin') {
-                    data.address = document.getElementById('profAddr').value;
-                    data.email = document.getElementById('profEmail').value;
-                    if (currentUser.type === 'Owner') {
-                        data.qr_code = currentQrCodeBase64;
-                    }
-                }
-            }
+            data[actualKey] = val;
+            let table = currentUser.type === 'Customer' ? 'customers' : 'users';
 
             try {
                 const res = await fetch(`${API_BASE}/${table}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
                 const saved = await res.json();
                 
-                if (saved.success === false) {
-                    alert(saved.message);
-                    btn.innerText = "Update Profile";
-                    return;
-                }
+                if (saved.success === false) { alert(saved.message); btn.innerText = "Update & Save"; return; }
 
-                // Combine data sent with data received to preserve fields (like qr_code) that the backend might not return.
                 const finalObject = { ...data, ...saved };
 
-                // Update the local array to maintain state consistency within the current session
                 if (table === 'users') {
                     const userIndex = users.findIndex(u => u.id === finalObject.id);
                     if (userIndex > -1) users[userIndex] = finalObject;
@@ -1321,39 +1454,20 @@
                 }
                 currentUser = finalObject;
                 
-                // Fix for Login Error: Update cached session with immutable ID instead of old mobile/username
                 let sessionAuth = JSON.parse(localStorage.getItem('sessionAuth'));
                 if (sessionAuth) {
                     sessionAuth.login_id = currentUser.login_id || currentUser.cid;
+                    if (key === 'pass' || key === 'cpass') sessionAuth.pass = val;
                     localStorage.setItem('sessionAuth', JSON.stringify(sessionAuth));
                 }
                 localStorage.setItem('sessionUser', JSON.stringify(currentUser));
                 
-                alert("Profile Updated Successfully!");
-                setupUI(); showView('main-menu');
-            } catch(e) { alert("Error saving profile!"); }
-            if(btn) btn.innerText = "Update Profile";
-        }
-
-        function enableProfileEdit() {
-            ['profName', 'profMobile', 'profEmail', 'profAddr', 'profUsername'].forEach(fieldId => {
-                if (document.getElementById(fieldId)) {
-                    document.getElementById(fieldId).readOnly = false;
-                    document.getElementById(fieldId).style.opacity = "1";
-                }
-            });
-            
-            if (currentUser.type !== 'Customer' && document.getElementById('profPassWrapper')) {
-                document.getElementById('profPassWrapper').classList.remove('hidden');
-            }
-            
-            if (document.getElementById('btnChangePic')) document.getElementById('btnChangePic').classList.remove('hidden');
-            if (currentUser.type === 'Owner' && document.getElementById('btnChangeQr')) {
-                document.getElementById('btnChangeQr').classList.remove('hidden');
-            }
-            
-            if (document.getElementById('btnSaveProfile')) document.getElementById('btnSaveProfile').classList.remove('hidden');
-            if (document.getElementById('btnEditProfile')) document.getElementById('btnEditProfile').classList.add('hidden');
+                showView('profile-view');
+                closeEditFieldModal();
+                alert("Profile Updated Successfully!", "success");
+                setupUI();
+            } catch(e) { alert("Error updating field!"); }
+            btn.innerText = "Update & Save";
         }
 
         // --- FORM VALIDATOR ---
@@ -1609,6 +1723,7 @@
             document.getElementById('btn-route').classList.toggle('hidden', currentUser.type !== 'Owner' && currentUser.type !== 'Admin');
             document.getElementById('btn-owner-master').classList.toggle('hidden', currentUser.type !== 'Admin'); // Only Admin can see this
             if(document.getElementById('btn-manual-bill')) document.getElementById('btn-manual-bill').classList.toggle('hidden', currentUser.type !== 'Owner' && currentUser.type !== 'Admin');
+            document.getElementById('btn-dropdown-req').classList.toggle('hidden', !isMilkMan);
             
             applyTranslations();
         }
@@ -1644,42 +1759,18 @@
             }, 50);
 
             if(id === 'profile-view') {
-                document.getElementById('profId').value = currentUser.login_id || currentUser.cid;
-                document.getElementById('profUsername').value = currentUser.username || '';
-                document.getElementById('profName').value = currentUser.name || '';
-                document.getElementById('profPass').value = ''; // Do NOT pre-fill with hashed password, user will enter new if needed
-                document.getElementById('profMobile').value = currentUser.mobile || '';
-                document.getElementById('profEmail').value = currentUser.email || '';
-                document.getElementById('profAddr').value = currentUser.address || currentUser.addr || '';
-                currentProfilePicBase64 = currentUser.profile_pic || '';
-                document.getElementById('profPicPreview').src = currentProfilePicBase64 || 'https://via.placeholder.com/100';
-
-                if (currentUser.type === 'Owner') {
-                    document.getElementById('owner-qr-section').classList.remove('hidden');
-                    currentQrCodeBase64 = currentUser.qr_code || '';
-                    document.getElementById('qrCodePreview').src = currentQrCodeBase64 || 'https://via.placeholder.com/150';
-                } else {
-                    document.getElementById('owner-qr-section').classList.add('hidden');
-                }
-
-                // Initialize Profile in View-Only Mode
-                ['profName', 'profMobile', 'profEmail', 'profAddr', 'profUsername'].forEach(fieldId => {
-                    if(document.getElementById(fieldId)) {
-                        document.getElementById(fieldId).readOnly = true;
-                        document.getElementById(fieldId).style.opacity = "0.7";
-                    }
-                });
-                document.getElementById('profPassWrapper').classList.add('hidden');
-                if (document.getElementById('profPassWrapper')) document.getElementById('profPassWrapper').classList.add('hidden');
-                if (document.getElementById('btnChangePic')) document.getElementById('btnChangePic').classList.remove('hidden');
-                if (document.getElementById('btnChangeQr')) document.getElementById('btnChangeQr').classList.add('hidden');
-                document.getElementById('btnSaveProfile').classList.add('hidden');
-                document.getElementById('btnEditProfile').classList.remove('hidden');
-                if (document.getElementById('btnSaveProfile')) document.getElementById('btnSaveProfile').classList.add('hidden');
-                if (document.getElementById('btnEditProfile')) document.getElementById('btnEditProfile').classList.remove('hidden');
-
-                document.getElementById('profEmail').classList.toggle('hidden', currentUser.type !== 'Owner' && currentUser.type !== 'Admin');
-                document.getElementById('profAddr').classList.toggle('hidden', currentUser.type === 'Milk Man');
+                document.getElementById('mainProfilePic').src = currentUser.profile_pic || 'https://via.placeholder.com/100';
+                document.getElementById('mainProfileName').innerText = currentUser.name || '';
+                document.getElementById('mainProfileRole').innerText = currentUser.type || '';
+                document.getElementById('lbl-name').innerText = currentUser.name || '';
+                document.getElementById('lbl-username').innerText = currentUser.username || '-';
+                document.getElementById('lbl-mobile').innerText = currentUser.mobile || '-';
+                document.getElementById('lbl-email').innerText = currentUser.email || '-';
+                document.getElementById('lbl-addr').innerText = currentUser.address || currentUser.addr || '-';
+                
+                document.getElementById('row-email').classList.toggle('hidden', currentUser.type !== 'Owner' && currentUser.type !== 'Admin');
+                document.getElementById('row-addr').classList.toggle('hidden', currentUser.type === 'Milk Man');
+                document.getElementById('row-pass').classList.toggle('hidden', currentUser.type === 'Customer');
             }
 
             if(id === 'user-master') { 
@@ -1752,26 +1843,6 @@
         function genAutoId(prefix) { return prefix + Math.floor(Math.random() * 90000 + 10000); }
 
         // --- STAFF ---
-        async function fetchTransactions() {
-            try {
-                const response = await fetch(`${API_BASE}/transactions?company=${currentUser.company}`);
-                if (!response.ok) throw new Error('Failed to fetch transactions');
-                transactions = await response.json();
-            } catch (error) {
-                console.error("Error fetching transactions:", error);
-                // Optionally, alert the user or show a message
-            }
-        }
-
-        async function fetchRequests() {
-            try {
-                const response = await fetch(`${API_BASE}/requests?company=${currentUser.company}`);
-                if (!response.ok) throw new Error('Failed to fetch requests');
-                requests = await response.json();
-            } catch (error) {
-                console.error("Error fetching requests:", error);
-            }
-        }
 
         function openNewUserForm() {
             resetForm('user');
@@ -1920,7 +1991,7 @@
             document.getElementById('editTransPaymentSection').classList.toggle('hidden', type === 'Items');
             
             if (type === 'Payment') {
-                document.getElementById('tTotalDisplay').innerText = 'Total: ₹' + (document.getElementById('tPaymentAmt').value || 0);
+                document.getElementById('tTotalDisplay').innerText = 'Total: ₹' + (parseFloat(document.getElementById('tPaymentAmt').value || 0)).toFixed(2);
             } else {
                 renderEditTransItems(); // Restores item total
             }
@@ -2023,7 +2094,7 @@
                 html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
                     <td style="padding:8px 5px;"><b>${d.item}</b></td>
                     <td style="padding:8px 5px;">${d.qty}</td>
-                    <td style="padding:8px 5px;">₹${d.rate}</td>
+                    <td style="padding:8px 5px;">₹${d.rate.toFixed(2)}</td>
                     <td style="padding:8px 5px; color:var(--success); font-weight:bold;">₹${d.total.toFixed(2)}</td>
                     <td style="padding:8px 5px;"><button type="button" class="badge" style="background:var(--danger);" onclick="removeGbItem(${i})">X</button></td>
                 </tr>`;
@@ -2087,7 +2158,7 @@
                     <td><b>GB-${billNo}</b><br><span style="font-size:11px; color:#94a3b8;">${t.date}</span></td>
                     <td>${t.cust}</td>
                     <td>${displayItem}</td>
-                    <td style="color:var(--success); font-weight:bold;">₹${t.total}</td>
+                    <td style="color:var(--success); font-weight:bold;">₹${parseFloat(t.total).toFixed(2)}</td>
                     <td>
                         <button class="badge" style="background:var(--warning); color:black" onclick="editGb(${realIdx})">Edit</button>
                         <button class="badge" style="background:#4f46e5; color:white" onclick="reprintGb(${realIdx})">Print</button>
@@ -2188,6 +2259,7 @@
             let companyName = currentUser.company && currentUser.company !== 'Default' ? currentUser.company : 'Dairy Ledger';
             let ownerAddress = currentUser.address || currentUser.addr || '';
             let ownerMobile = currentUser.mobile || '';
+            let ownerLogo = currentUser.company_logo || '';
                 let printHtml = `<html><head><title>Cash Memo</title><style>
                     body { font-family: sans-serif; padding: 20px; color: black; max-width: 400px; margin: auto; }
                     h2, h4 { text-align: center; margin: 5px 0; }
@@ -2199,6 +2271,7 @@
                     <div class="no-print" style="text-align:right; margin-bottom:10px;">
                         <button onclick="window.print()" style="padding:8px 15px; background:#4f46e5; color:white; border:none; border-radius:6px; font-size:14px; cursor:pointer;">🖨️ Print Receipt</button>
                     </div>
+                    ${ownerLogo ? `<img src="${ownerLogo}" style="max-width:150px; max-height:80px; display:block; margin: 0 auto 5px auto;">` : ''}
                     <h2>${companyName.toUpperCase()}</h2>
                     ${ownerAddress ? `<p style="text-align:center; margin:2px 0; font-size:12px;">${ownerAddress}</p>` : ''}
                     ${ownerMobile ? `<p style="text-align:center; margin:2px 0 10px 0; font-size:12px;"><b>Mob:</b> ${ownerMobile}</p>` : ''}
@@ -2449,7 +2522,7 @@
             const tbody = document.getElementById('productTableBody'); 
             let html = '';
             products.forEach((p, i) => { 
-                html += `<tr style="animation-delay:${i * 0.04}s"><td>${p.item_name} <span style="font-size:11px; color:#94a3b8;">(${p.unit || '-'})</span></td><td>₹${p.rate}</td><td>
+                html += `<tr style="animation-delay:${i * 0.04}s"><td>${p.item_name} <span style="font-size:11px; color:#94a3b8;">(${p.unit || '-'})</span></td><td>₹${parseFloat(p.rate).toFixed(2)}</td><td>
                     <button class="badge" style="background:var(--warning); color:black" onclick="editProduct(${i})">Edit</button>
                     <button class="badge" style="background:var(--danger)" onclick="deleteItem(${i}, 'product')">Del</button>
                 </td></tr>`; 
@@ -2572,32 +2645,46 @@
         }
 
         function renderTrans() {
-            const tbody = document.getElementById('transTableBody'); 
+            const tbody = document.getElementById('transTableBody');
+            if (!tbody) return; // Exit if the element isn't in the DOM
+            
+            const dateInput = document.getElementById('transAllDate');
+            if (dateInput && !dateInput.value) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+            const filterDate = convertToDDMMYYYY(dateInput.value);
+
             let html = '';
             
-            const dNow = new Date();
-           const today = formatDate(dNow);
-            const yest = formatDate(new Date(new Date().setDate(new Date().getDate() - 1)));
-            const tom = formatDate(new Date(new Date().setDate(new Date().getDate() + 1)));
-            const allowedDates = [today, yest, tom];
+            const today_dt = new Date();
+            const yest_dt = new Date();
+            yest_dt.setDate(yest_dt.getDate() - 1);
+            const tom_dt = new Date();
+            tom_dt.setDate(tom_dt.getDate() + 1);
+            const allowedDates = [formatDate(today_dt), formatDate(yest_dt), formatDate(tom_dt)];
 
             let filterSel = document.getElementById('filterMilkMan');
             let selectedMM = (filterSel && !filterSel.classList.contains('hidden')) ? filterSel.value : null;
 
+            let foundEntries = false;
             transactions.slice().reverse().forEach((t, i) => { 
                 const realIdx = transactions.length - 1 - i;
                 
-                if (t.date !== currentFeedDateStr) return; // Only show currently selected date's entries
+                // Filter by the new date picker
+                if (convertToDDMMYYYY(t.date) !== filterDate) return;
+                
                 if (t.shift === 'General Bill') return; // Hide General Bills from main ledger
                 if (selectedMM) {
-                    let cObj = customers.find(c => c.name === t.cust);
+                    let cObj = customers.find(c => (c.name || '').trim() === (t.cust || '').trim());
                     if (cObj && cObj.milkman_id !== selectedMM) return;
                 }
                 
+                foundEntries = true;
                 let hideClass = ''; 
-                if(isMilkMan() && !allowedDates.includes(t.date)) hideClass = 'hidden'; // Restrict old edits for Milk Man
+                // For Milk Man, only allow edits for recent dates, regardless of what's selected. Owner can edit anything.
+                if(isMilkMan() && !allowedDates.includes(convertToDDMMYYYY(t.date))) hideClass = 'hidden'; 
 
-                const totalDisplay = t.item === 'Payment' ? `<span style="color:var(--success)">-₹${Math.abs(parseFloat(t.total))}</span>` : `₹${t.total}`;
+                const totalDisplay = t.item === 'Payment' ? `<span style="color:var(--success)">-₹${Math.abs(parseFloat(t.total)).toFixed(2)}</span>` : `₹${parseFloat(t.total).toFixed(2)}`;
                 const displayItem = formatItemDisplay(t.item);
                 
                 html += `<tr style="animation-delay:${Math.min(i * 0.02, 0.5)}s"><td>${t.date}</td><td>${t.cust}</td><td>${displayItem}</td><td>${totalDisplay}</td><td>
@@ -2605,7 +2692,10 @@
                     <button class="badge ${hideClass}" style="background:var(--danger)" onclick="deleteItem(${realIdx}, 'trans')">Del</button>
                 </td></tr>`; 
             });
-            if(tbody) tbody.innerHTML = html;
+            if (!foundEntries) {
+                html = `<tr><td colspan="5" style="text-align:center; padding: 20px;">No entries found for ${filterDate}.</td></tr>`;
+            }
+            tbody.innerHTML = html;
         }
 
         // --- CUSTOMER MULTI-ITEMS LOGIC ---
@@ -2660,7 +2750,7 @@
             const ul = document.getElementById('cItemList');
             let html = '';
             currentCustDefaults.forEach((d, i) => {
-                html += `<li>${d.item} (Qty: ${d.qty || '-'}) - ₹${d.rate} 
+                html += `<li>${d.item} (Qty: ${d.qty || '-'}) - ₹${parseFloat(d.rate).toFixed(2)} 
                 <button type="button" class="badge" style="background:var(--danger); padding: 2px 5px; margin-left: 10px;" onclick="removeCustItem(${i})">X</button></li>`;
             });
             if(ul) ul.innerHTML = html;
@@ -2688,7 +2778,7 @@
             let html = '';
             if(items.length === 0) html = '<li>No default items set.</li>';
             items.forEach((d, i) => {
-                html += `<li style="margin-bottom:5px;"><b>${d.item}</b> : ${d.qty || '-'} Unit (₹${d.rate}/u) 
+                html += `<li style="margin-bottom:5px;"><b>${d.item}</b> : ${d.qty || '-'} Unit (₹${parseFloat(d.rate).toFixed(2)}/u) 
                 <button type="button" class="badge" style="background:var(--danger); padding: 2px 5px; margin-left: 10px;" onclick="removeSelfCustItem(${i})">Remove</button></li>`;
             });
             if(ul) ul.innerHTML = html;
@@ -2770,7 +2860,16 @@
             }
             document.getElementById('temp-change-container').style.borderColor = 'transparent';
 
-            let existingTrans = transactions.find(t => t.date === dateStr && t.cust === currentUser.name && t.shift === shift && t.item !== 'Payment');
+            let cName = (custObj.name || '').trim().toLowerCase();
+            let targetShift = shift.toLowerCase();
+
+            let existingTrans = transactions.find(t => {
+                let tDateStr = convertToDDMMYYYY((t.date || '').trim());
+                let tShift = (t.shift || '').trim().toLowerCase();
+                let tCust = (t.cust || '').trim().toLowerCase();
+                return tDateStr === dateStr && tCust === cName && (tShift === targetShift || tShift === '') && t.item !== 'Payment';
+            });
+            
             let savedItemsMap = {};
             if (existingTrans) {
                 try {
@@ -2779,7 +2878,12 @@
                 } catch (e) {}
             }
             
-            let existingPayTrans = transactions.find(t => t.date === dateStr && t.cust === currentUser.name && t.shift === shift && t.item === 'Payment');
+            let existingPayTrans = transactions.find(t => {
+                let tDateStr = convertToDDMMYYYY((t.date || '').trim());
+                let tShift = (t.shift || '').trim().toLowerCase();
+                let tCust = (t.cust || '').trim().toLowerCase();
+                return tDateStr === dateStr && tCust === cName && (tShift === targetShift || tShift === '') && t.item === 'Payment';
+            });
             let savedPayAmt = existingPayTrans ? Math.abs(parseFloat(existingPayTrans.rate)) : '';
 
             let defItems = getCustItems(custObj);
@@ -2825,9 +2929,41 @@
             let payAmt = parseFloat(document.getElementById('temp-pay').value) || 0;
 
             try {
-                let existingItemsTrans = transactions.find(t => t.date === dateStr && t.cust === custObj.name && (t.shift === shift || !t.shift) && t.item !== 'Payment');
+                let cName = (custObj.name || '').trim().toLowerCase();
+                let targetShift = shift.toLowerCase();
+
+                let allItemsTrans = transactions.filter(t => {
+                    let tDateStr = convertToDDMMYYYY((t.date || '').trim());
+                    let tShift = (t.shift || '').trim().toLowerCase();
+                    let tCust = (t.cust || '').trim().toLowerCase();
+                    return tDateStr === dateStr && tCust === cName && (tShift === targetShift || tShift === '') && t.item !== 'Payment';
+                });
+                let existingItemsTrans = allItemsTrans[0];
+
+                let allPayTrans = transactions.filter(t => {
+                    let tDateStr = convertToDDMMYYYY((t.date || '').trim());
+                    let tShift = (t.shift || '').trim().toLowerCase();
+                    let tCust = (t.cust || '').trim().toLowerCase();
+                    return tDateStr === dateStr && tCust === cName && (tShift === targetShift || tShift === '') && t.item === 'Payment';
+                });
+                let existingPayTrans = allPayTrans[0];
+
+                // Auto-Heal Duplicates
+                if (allItemsTrans.length > 1) {
+                    for(let i=1; i<allItemsTrans.length; i++) {
+                        await fetch(`${API_BASE}/transactions/${allItemsTrans[i].id}`, { method: 'DELETE' }).catch(e=>console.log(e));
+                        transactions = transactions.filter(t => t.id !== allItemsTrans[i].id);
+                    }
+                }
+                if (allPayTrans.length > 1) {
+                    for(let i=1; i<allPayTrans.length; i++) {
+                        await fetch(`${API_BASE}/transactions/${allPayTrans[i].id}`, { method: 'DELETE' }).catch(e=>console.log(e));
+                        transactions = transactions.filter(t => t.id !== allPayTrans[i].id);
+                    }
+                }
+
                 if (itemsToSave.length > 0) {
-                    let data = { date: dateStr, cust: custObj.name, item: JSON.stringify(itemsToSave), qty: '-', rate: grandTotal, total: grandTotal, company: custObj.company, shift: shift };
+                    let data = { date: dateStr, cust: custObj.name, item: JSON.stringify(itemsToSave), qty: '-', rate: grandTotal, total: grandTotal, company: custObj.company || currentUser.company, shift: shift };
                     if (existingItemsTrans) data.id = existingItemsTrans.id;
                     let res = await fetch(`${API_BASE}/transactions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
                     let savedData = await res.json();
@@ -2836,9 +2972,8 @@
                     await fetch(`${API_BASE}/transactions/${existingItemsTrans.id}`, { method: 'DELETE' });
                     transactions = transactions.filter(t => t.id !== existingItemsTrans.id);
                 }
-                let existingPayTrans = transactions.find(t => t.date === dateStr && t.cust === custObj.name && (t.shift === shift || !t.shift) && t.item === 'Payment');
                 if (payAmt > 0) {
-                    let pData = { date: dateStr, cust: custObj.name, item: 'Payment', qty: '-', rate: payAmt, total: payAmt, company: custObj.company, shift: shift };
+                    let pData = { date: dateStr, cust: custObj.name, item: 'Payment', qty: '-', rate: payAmt, total: payAmt, company: custObj.company || currentUser.company, shift: shift };
                     if (existingPayTrans) pData.id = existingPayTrans.id;
                     let res = await fetch(`${API_BASE}/transactions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pData) });
                     let savedData = await res.json();
@@ -2877,11 +3012,11 @@
             currentEditTransItems.forEach((d, i) => {
                 let rowTotal = (parseFloat(d.qty) * parseFloat(d.rate));
                 grandTotal += rowTotal;
-                html += `<li style="margin-bottom:5px;"><b>${d.item}</b> : ${d.qty} Unit (₹${d.rate}/u) = <b>₹${rowTotal}</b> 
+                html += `<li style="margin-bottom:5px;"><b>${d.item}</b> : ${d.qty} Unit (₹${parseFloat(d.rate).toFixed(2)}/u) = <b>₹${rowTotal.toFixed(2)}</b> 
                 <button type="button" class="badge" style="background:var(--danger); margin-left: 10px;" onclick="removeEditTransItem(${i})">X</button></li>`;
             });
             if(ul) ul.innerHTML = html;
-            document.getElementById('tTotalDisplay').innerText = `Total: ₹${grandTotal}`;
+            document.getElementById('tTotalDisplay').innerText = `Total: ₹${grandTotal.toFixed(2)}`;
         }
 
         function autoFillEditTransRate() {
@@ -2953,13 +3088,22 @@
             let selectedMM = (filterSel && !filterSel.classList.contains('hidden')) ? filterSel.value : null;
 
             let doneToday = new Map();
+            let targetShift = currentFeedShift.toLowerCase();
+
             transactions.forEach(t => {
                 if (t.shift === 'General Bill') return; // Hide General Bills
-                if (t.date === currentFeedDateStr && t.company === currentUser.company && (t.shift === currentFeedShift || !t.shift)) {
-                    let entry = doneToday.get(t.cust) || { itemsTrans: null, payTrans: null };
-                    if (t.item === 'Payment') entry.payTrans = t;
-                    else entry.itemsTrans = t;
-                    doneToday.set(t.cust, entry);
+                // Robust matching: Ignore exact company strictness locally & trim spaces
+                let tDateStr = convertToDDMMYYYY((t.date || '').trim());
+                let tShift = (t.shift || '').trim().toLowerCase();
+                if (tDateStr === currentFeedDateStr && (tShift === targetShift || tShift === '')) {
+                    let cName = (t.cust || '').trim().toLowerCase();
+                    let entry = doneToday.get(cName) || { itemsTrans: null, payTrans: null };
+                    if (t.item === 'Payment') {
+                        if (!entry.payTrans) entry.payTrans = t;
+                    } else {
+                        if (!entry.itemsTrans) entry.itemsTrans = t;
+                    }
+                    doneToday.set(cName, entry);
                 }
             });
 
@@ -2971,10 +3115,10 @@
                 let cShift = c.shift || 'Morning'; // Fallback for old data
                 if (cShift !== currentFeedShift && cShift !== 'Both') return; // Filter By Shift
                 
-                let entry = doneToday.get(c.name);
+                let entry = doneToday.get((c.name || '').trim().toLowerCase());
                 
                 if (entry && currentFeedOffset <= 0) {
-                    completed.push({c, i});
+                    completed.push({c, i, entry});
                 } else {
                     pending.push({c, i, entry});
                 }
@@ -2984,17 +3128,20 @@
             pending.sort((a,b) => getSeq(a.c) - getSeq(b.c));
             completed.sort((a,b) => getSeq(a.c) - getSeq(b.c));
 
-            let html = '';
+            let finalFeedHtml = '';
             let feedIndex = 0;
             
-            pending.forEach(obj => {
+            const renderCard = (obj, isCompleted) => {
                 const {c, i, entry} = obj;
                 
                 let savedItemsMap = {};
                 let savedPayAmt = '';
+                let savedTotalAmt = 0;
+                
                 if (entry) {
                     if (entry.payTrans) savedPayAmt = Math.abs(parseFloat(entry.payTrans.rate));
                     if (entry.itemsTrans) {
+                        savedTotalAmt = parseFloat(entry.itemsTrans.total || 0);
                         try { let parsed = JSON.parse(entry.itemsTrans.item); if(Array.isArray(parsed)) parsed.forEach(it => { savedItemsMap[it.item] = it.qty; }); } catch(e) {}
                     }
                 }
@@ -3003,58 +3150,71 @@
                 let itemsHtml = defItems.map((d, itemIdx) => {
                         let preFillQty = (entry && entry.itemsTrans) ? (savedItemsMap[d.item] !== undefined ? savedItemsMap[d.item] : '') : (d.qty || '');
                     return `
-                    <div style="background:rgba(255,255,255,0.05); padding:5px 10px; border-radius:6px; display:flex; align-items:center; gap:8px;">
-                        <span style="font-size:12px; width:70px; font-weight:bold;">${d.item}</span>
-                        <input type="number" id="feed-qty-${i}-${itemIdx}" value="${preFillQty}" style="width:65px; padding:6px; margin:0;" placeholder="Qty">
+                    <div style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:6px; display:flex; align-items:center; gap:6px; border:1px solid rgba(255,255,255,0.1);">
+                        <span style="font-size:12px; font-weight:bold; max-width:70px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${d.item}">${d.item}</span>
+                        <input type="number" id="feed-qty-${i}-${itemIdx}" value="${preFillQty}" style="width:50px; padding:4px; margin:0; font-size:12px; text-align:center;" placeholder="Qty">
                     </div>`;
                 }).join('');
 
-                let badgeStatus = entry ? `<span style="font-size:11px; color:var(--success); border:1px solid var(--success); padding:3px 8px; border-radius:12px;">Saved / Pre-ordered</span>` : `<span style="font-size:11px; color:var(--warning); border:1px solid var(--warning); padding:3px 8px; border-radius:12px;">Pending</span>`;
-
-                html += `
-                <div style="background:var(--card); border:1px solid #475569; padding: 15px; border-radius:12px; margin-bottom:15px; box-shadow:0 4px 6px rgba(0,0,0,0.3); display:flex; flex-direction:column; gap:12px; animation: fadeInUp 0.5s backwards; animation-delay: ${(feedIndex++) * 0.04}s;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155; padding-bottom:10px;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-size:13px; color:#94a3b8; font-weight:bold;">Seq: #${getSeq(c) !== 999 ? getSeq(c) : '-'}</span>
-                            <strong style="font-size:16px; color:var(--text); margin-left:5px;">${c.name}</strong>
-                        </div>
-                        ${badgeStatus}
-                    </div>
-                    <div style="display:flex; flex-wrap:wrap; gap:10px;">
-                        ${itemsHtml || '<span style="font-size:12px; color:#94a3b8;">No default items set.</span>'}
-                        <div style="background:rgba(16, 185, 129, 0.05); padding:5px 10px; border-radius:6px; display:flex; align-items:center; gap:8px; border:1px solid rgba(16, 185, 129, 0.3);">
-                            <span style="font-size:12px; color:var(--success); font-weight:bold;">Payment</span>
-                            <input type="number" id="feed-pay-${i}" value="${savedPayAmt}" placeholder="₹ Amt" style="width:75px; padding:6px; margin:0;">
-                        </div>
-                    </div>
-                    `;
-                    
                 let isOld = false;
                 if (isMilkMan() && currentFeedOffset < -1) isOld = true;
-
-                if (isOld) {
-                    html += `<div style="text-align:center; font-size:12px; color:var(--warning); margin-top:5px; padding:8px; border:1px dashed var(--warning); border-radius:6px;">⚠️ Locked for past dates. Contact Owner to edit.</div>`;
-                } else if (currentFeedOffset > 0) {
-                        let btnTxt = entry ? "Update Pre-order 📅" : "Save Pre-order 📅";
-                        let bgBtn = entry ? "var(--warning)" : "var(--primary)";
-                        let colBtn = entry ? "black" : "white";
-                    html += `<button class="btn-save" style="width:100%; padding:10px; font-size:14px; margin-top:5px; background:${bgBtn}; color:${colBtn};" onclick="saveFeedEntry(${i}, this)">${btnTxt}</button>`;
-                } else {
-                    html += `<button class="btn-save" style="width:100%; padding:10px; font-size:14px; margin-top:5px;" onclick="saveFeedEntry(${i}, this)">Done / Update ✔</button>`;
-                }
                 
-                html += `</div>`;
-            });
+                let actionButton = '';
+                if (isOld) {
+                    actionButton = `<span style="font-size:11px; color:var(--warning); padding:4px 8px; border:1px dashed var(--warning); border-radius:6px;">⚠️ Locked</span>`;
+                } else if (currentFeedOffset > 0) {
+                    let btnTxt = entry ? "Update 📅" : "Save 📅";
+                    let bgBtn = entry ? "var(--warning)" : "var(--primary)";
+                    let colBtn = entry ? "black" : "white";
+                    actionButton = `<button class="btn-save" style="width:auto; padding:6px 12px; font-size:12px; background:${bgBtn}; color:${colBtn}; margin:0;" onclick="saveFeedEntry(${i}, this)">${btnTxt}</button>`;
+                } else { // Today or past date
+                    let btnTxt = entry ? "Update ✔" : "Done ✔";
+                    let bgBtn = entry ? "var(--warning)" : "var(--primary)";
+                    let colBtn = entry ? "black" : "white";
+                    actionButton = `<button class="btn-save" style="width:auto; padding:6px 12px; font-size:13px; background:${bgBtn}; color:${colBtn}; margin:0;" onclick="saveFeedEntry(${i}, this)">${btnTxt}</button>`;
+                }
+
+                let cardBorder = entry ? '1px solid var(--success)' : '1px solid #475569';
+                let titleColor = isCompleted ? 'var(--success)' : 'var(--text)'; // Only green if completed
+                let amountBadge = entry && savedTotalAmt > 0 ? `<span style="font-size:11px; background:rgba(16, 185, 129, 0.15); color:var(--success); padding:2px 6px; border-radius:4px; margin-left:5px;">₹${savedTotalAmt.toFixed(2)}</span>` : '';
+
+                return `
+                <div style="background:var(--card); border:${cardBorder}; padding: 10px 12px; border-radius:10px; margin-bottom:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); display:flex; flex-direction:column; animation: fadeInUp 0.5s backwards; animation-delay: ${(feedIndex++) * 0.04}s;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:12px; color:#94a3b8; font-weight:bold;">#${getSeq(c) !== 999 ? getSeq(c) : '-'}</span>
+                            <strong style="font-size:15px; color:${titleColor};">${c.name}${amountBadge}</strong>
+                        </div>
+                        ${actionButton}
+                    </div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
+                        ${itemsHtml || '<span style="font-size:12px; color:#94a3b8;">No default items set.</span>'}
+                        <div style="background:rgba(16, 185, 129, 0.05); padding:4px 8px; border-radius:6px; display:flex; align-items:center; gap:6px; border:1px solid rgba(16, 185, 129, 0.3);">
+                            <span style="font-size:11px; color:var(--success); font-weight:bold;">Pay ₹</span>
+                            <input type="number" id="feed-pay-${i}" value="${savedPayAmt}" placeholder="Amt" style="width:60px; padding:4px; margin:0; font-size:12px; text-align:center;">
+                        </div>
+                    </div>
+                </div>`;
+            };
+
+            if (pending.length > 0) { // If there are pending entries, show them
+                finalFeedHtml += `<div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; border:1px solid rgba(251, 191, 36, 0.3); margin-bottom:20px;">
+                    <h4 style="margin-top:0; margin-bottom:15px; color:var(--warning); border-bottom:1px dashed rgba(251, 191, 36, 0.3); padding-bottom:8px;">⏳ Pending</h4>`;
+                pending.forEach(obj => { finalFeedHtml += renderCard(obj, false); });
+                finalFeedHtml += `</div>`;
+            }
 
         let targetItems = {};
         let deliveredItems = {};
         let deliveredAmount = {};
         let skippedCustomers = [];
+        let totalCustomersForShift = 0;
 
         customers.forEach(c => {
             if (isMilkMan() && c.milkman_id !== currentUser.login_id) return;
             if (selectedMM && c.milkman_id !== selectedMM) return;
             if (c.shift !== currentFeedShift && c.shift !== 'Both') return;
+            totalCustomersForShift++;
             
             let cTarget = 0;
             let defItems = getCustItems(c);
@@ -3064,7 +3224,7 @@
                 cTarget += parseFloat(di.qty || 0);
             });
             
-            let entry = doneToday.get(c.name);
+            let entry = doneToday.get((c.name || '').trim().toLowerCase());
             if (entry && entry.itemsTrans) {
                 let cDelivered = 0;
                 try {
@@ -3107,10 +3267,10 @@
                 let p = t - d;
                 rows += `<tr>
                     <td style="padding:6px 10px;">${k}</td>
-                        <td style="padding:6px 10px; text-align:center;">${Number(t.toFixed(2))}</td>
-                        <td style="padding:6px 10px; text-align:center; color:var(--success); font-weight:bold;">${Number(d.toFixed(2))}</td>
-                        <td style="padding:6px 10px; text-align:center; color:${p > 0 ? 'var(--danger)' : 'var(--text)'};">${Number(p.toFixed(2))}</td>
-                        <td style="padding:6px 10px; text-align:right; color:var(--success); font-weight:bold;">₹${Number(amt.toFixed(2))}</td>
+                        <td style="padding:6px 10px; text-align:center;">${t.toFixed(2)}</td>
+                        <td style="padding:6px 10px; text-align:center; color:var(--success); font-weight:bold;">${d.toFixed(2)}</td>
+                        <td style="padding:6px 10px; text-align:center; color:${p > 0 ? 'var(--danger)' : 'var(--text)'};">${p.toFixed(2)}</td>
+                        <td style="padding:6px 10px; text-align:right; color:var(--success); font-weight:bold;">₹${amt.toFixed(2)}</td>
                 </tr>`;
             });
             bottomSummaryHtml += `<table style="margin:0; font-size:13px; width:100%;">
@@ -3122,7 +3282,7 @@
                     <th style="padding:6px 10px; text-align:right; color:#94a3b8;">Amount</th>
                 </tr></thead>
                 <tbody>${rows}</tbody>
-                <tfoot><tr><td colspan="4" style="text-align:right; padding:6px 10px; font-weight:bold; border-top:1px solid #334155;">Total Value:</td><td style="text-align:right; padding:6px 10px; font-weight:bold; color:var(--success); border-top:1px solid #334155;">₹${Number(grandTotalAmt.toFixed(2))}</td></tr></tfoot>
+                <tfoot><tr><td colspan="4" style="text-align:right; padding:6px 10px; font-weight:bold; border-top:1px solid #334155;">Total Value:</td><td style="text-align:right; padding:6px 10px; font-weight:bold; color:var(--success); border-top:1px solid #334155;">₹${grandTotalAmt.toFixed(2)}</td></tr></tfoot>
             </table>`;
         } else {
             bottomSummaryHtml += `<p style="font-size:13px; color:#94a3b8; margin:0;">No active items assigned for this shift.</p>`;
@@ -3136,27 +3296,14 @@
 
         bottomSummaryHtml += `</div>`;
 
-        const reportDiv = document.getElementById('daily-feed-report');
-        if (reportDiv) reportDiv.innerHTML = bottomSummaryHtml;
-
-            let completedHtml = '';
-            if (completed.length > 0) {
-                completedHtml += `<h4 style="margin-top:25px; color:var(--success); border-bottom:1px solid #334155; padding-bottom:5px;">✅ Completed Today</h4>`;
-                completed.forEach(obj => {
-                    completedHtml += `
-                    <div style="opacity:0.6; background:var(--input); padding: 12px 15px; border-radius:10px; border-left: 5px solid var(--success); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; animation: fadeInUp 0.5s backwards; animation-delay: ${(feedIndex++) * 0.04}s;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="width: 45px; text-align: center; background: rgba(0,0,0,0.1); padding: 4px; border-radius: 4px; border: 1px solid #475569; font-size: 12px;">Seq: #${getSeq(obj.c) !== 999 ? getSeq(obj.c) : '-'}</span>
-                            <strong style="font-size:15px; color:var(--text);">${obj.c.name}</strong>
-                        </div>
-                        <span style="font-size:12px; color:var(--success); font-weight:bold;">Done</span>
-                    </div>`;
-                });
+            if (pending.length === 0 && completed.length > 0 && totalCustomersForShift > 0) {
+                finalFeedHtml += `<div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; border:1px solid rgba(16, 185, 129, 0.3); margin-bottom:20px;"><p style="font-size:16px; color:var(--success); text-align:center; margin:0;">All entries delivered for today! 🎉</p></div>`;
+            } else if (pending.length === 0 && completed.length === 0 && totalCustomersForShift === 0) {
+                finalFeedHtml += `<div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; border:1px solid rgba(16, 185, 129, 0.3); margin-bottom:20px;"><p style="font-size:16px; color:#94a3b8; text-align:center; margin:0;">No customers assigned for this shift or date.</p></div>`;
             }
-            
-            if(pending.length === 0 && completed.length > 0) completedHtml += `<p style="font-size:15px; color:var(--success); text-align:center; margin-top:20px;">All entries completed for today! 🎉</p>`;
 
-            feedDiv.innerHTML = html + completedHtml;
+            feedDiv.innerHTML = finalFeedHtml;
+            document.getElementById('daily-feed-report').innerHTML = bottomSummaryHtml;
         }
 
         let currentSeqEditList = [];
@@ -3253,28 +3400,53 @@
 
             defItems.forEach((d, itemIdx) => {
                 let el = document.getElementById(`feed-qty-${idx}-${itemIdx}`);
-                if (el && el.value > 0) {
+                if (el && el.value !== '' && parseFloat(el.value) > 0) {
                     let q = parseFloat(el.value);
-                    itemsToSave.push({item: d.item, qty: q, rate: d.rate, total: q * d.rate});
-                    grandTotal += (q * d.rate);
+                    let rate = parseFloat(d.rate) || 0;
+                    itemsToSave.push({item: d.item, qty: q, rate: rate, total: q * rate});
+                    grandTotal += (q * rate);
                 }
             });
 
             let payEl = document.getElementById(`feed-pay-${idx}`);
             let payAmt = payEl ? parseFloat(payEl.value) : 0;
 
-            if (itemsToSave.length === 0 && (!payAmt || payAmt <= 0)) {
-                alert("Enter at least one quantity or payment amount!");
-                btn.innerText = "Done ✔"; btn.disabled = false;
-                return;
-            }
-
             try {
-                let existingItemsTrans = transactions.find(t => t.date === currentFeedDateStr && t.cust === c.name && (t.shift === currentFeedShift || !t.shift) && t.item !== 'Payment');
-                let existingPayTrans = transactions.find(t => t.date === currentFeedDateStr && t.cust === c.name && (t.shift === currentFeedShift || !t.shift) && t.item === 'Payment');
+                let cName = (c.name || '').trim().toLowerCase();
+                let targetShift = currentFeedShift.toLowerCase();
+
+                let allItemsTrans = transactions.filter(t => {
+                    let tDateStr = convertToDDMMYYYY((t.date || '').trim());
+                    let tShift = (t.shift || '').trim().toLowerCase();
+                    let tCust = (t.cust || '').trim().toLowerCase();
+                    return tDateStr === currentFeedDateStr && tCust === cName && (tShift === targetShift || tShift === '') && t.item !== 'Payment';
+                });
+                let existingItemsTrans = allItemsTrans[0];
+                
+                let allPayTrans = transactions.filter(t => {
+                    let tDateStr = convertToDDMMYYYY((t.date || '').trim());
+                    let tShift = (t.shift || '').trim().toLowerCase();
+                    let tCust = (t.cust || '').trim().toLowerCase();
+                    return tDateStr === currentFeedDateStr && tCust === cName && (tShift === targetShift || tShift === '') && t.item === 'Payment';
+                });
+                let existingPayTrans = allPayTrans[0];
+
+                // Auto-Heal Duplicates
+                if (allItemsTrans.length > 1) {
+                    for(let i=1; i<allItemsTrans.length; i++) {
+                        await fetch(`${API_BASE}/transactions/${allItemsTrans[i].id}`, { method: 'DELETE' }).catch(e=>console.log(e));
+                        transactions = transactions.filter(t => t.id !== allItemsTrans[i].id);
+                    }
+                }
+                if (allPayTrans.length > 1) {
+                    for(let i=1; i<allPayTrans.length; i++) {
+                        await fetch(`${API_BASE}/transactions/${allPayTrans[i].id}`, { method: 'DELETE' }).catch(e=>console.log(e));
+                        transactions = transactions.filter(t => t.id !== allPayTrans[i].id);
+                    }
+                }
 
                 if (itemsToSave.length > 0) {
-                    let data = { date: currentFeedDateStr, cust: c.name, item: JSON.stringify(itemsToSave), qty: '-', rate: grandTotal, total: grandTotal, company: c.company, shift: currentFeedShift };
+                    let data = { date: currentFeedDateStr, cust: c.name, item: JSON.stringify(itemsToSave), qty: '-', rate: grandTotal, total: grandTotal, company: c.company || currentUser.company, shift: currentFeedShift };
                     if (existingItemsTrans) data.id = existingItemsTrans.id;
 
                     let res = await fetch(`${API_BASE}/transactions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
@@ -3287,7 +3459,7 @@
                 }
 
                 if (payAmt > 0) {
-                    let pData = { date: currentFeedDateStr, cust: c.name, item: 'Payment', qty: '-', rate: payAmt, total: payAmt, company: c.company, shift: currentFeedShift };
+                    let pData = { date: currentFeedDateStr, cust: c.name, item: 'Payment', qty: '-', rate: payAmt, total: payAmt, company: c.company || currentUser.company, shift: currentFeedShift };
                     if (existingPayTrans) pData.id = existingPayTrans.id;
 
                     let res = await fetch(`${API_BASE}/transactions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pData) });
@@ -3311,22 +3483,40 @@
         
         async function approveRequest(i) {
             const req = requests[i];
+            const oldStatus = req.status;
             req.status = 'Approved';
-            // Send the updated request to the backend. The backend will handle transaction creation.
-            await fetch(`${API_BASE}/requests`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(req)
-            });
-            await fetchTransactions(); // Update the transactions array after approval
-            renderOwnerRequests();
+            
+            const btn = window.event ? window.event.target : null;
+            if(btn) { btn.innerText = "Wait..."; btn.disabled = true; }
+            
+            try {
+                await fetch(`${API_BASE}/requests`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(req)
+                });
+                await fetchBackgroundData(); // Re-syncs data and auto-refreshes views
+            } catch(e) {
+                req.status = oldStatus;
+                alert("Error approving request.");
+                if(btn) { btn.innerText = "Approve"; btn.disabled = false; }
+            }
         }
 
         async function rejectRequest(i) {
             if(!confirm("Are you sure you want to reject this request?")) return;
+            const btn = window.event ? window.event.target : null;
+            if(btn) { btn.innerText = "Wait..."; btn.disabled = true; }
+            
             requests[i].status = 'Rejected';
-            await fetch(`${API_BASE}/requests`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(requests[i]) });
-            renderOwnerRequests();
+            try {
+                await fetch(`${API_BASE}/requests`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(requests[i]) });
+                renderOwnerRequests();
+            } catch(e) {
+                requests[i].status = 'Pending';
+                alert("Network error.");
+                if(btn) { btn.innerText = "Reject"; btn.disabled = false; }
+            }
         }
 
         function editCust(i) { 
@@ -3428,6 +3618,9 @@
                 if(type === 'trans') {
                     await fetch(`${API_BASE}/transactions/${transactions[idx].id}`, { method: 'DELETE' });
                     transactions.splice(idx, 1);
+                    renderTrans(); // Refresh the "All Trans" list
+                    renderTransFeed(); // Refresh the "Daily Feed" to show the entry as pending again
+                    return; // Prevent full view reload
                 }
                 if(type === 'user') {
                     await fetch(`${API_BASE}/users/${users[idx].id}`, { method: 'DELETE' });
@@ -3447,6 +3640,7 @@
                 }
             } catch(e) {
                 alert("Network error, please try again.");
+                return;
             }
             
             let nextView = 'ledger-master';
@@ -3593,11 +3787,11 @@
                     if (dayData.items.length === 1) {
                         displayItem = dayData.items[0].item;
                         dispQty = dayData.items[0].qty;
-                        dispRate = dayData.items[0].rate;
+                        dispRate = parseFloat(dayData.items[0].rate).toFixed(2);
                     } else {
                         displayItem = dayData.items.map(i => `${i.item} <span style="color:#94a3b8">(${i.qty})</span>`).join(', ');
                         dispQty = dayData.items.length + ' Items';
-                        dispRate = dayData.items.map(i => i.rate).join(', ');
+                        dispRate = dayData.items.map(i => parseFloat(i.rate).toFixed(2)).join(' / ');
                     }
                     monthlyTransactionsHtml += `<tr style="animation-delay:${(tbIndex++) * 0.03}s"><td>${date}</td><td>${displayItem}</td><td>${dispQty}</td><td>${dispRate}</td><td>₹${dayData.total.toFixed(2)}</td></tr>`;
                 }
@@ -3633,12 +3827,11 @@
             }
             
             html += `
-                <div style="margin-top: 15px; padding: 12px 10px; border-top: 2px solid var(--primary); border-bottom: 2px solid var(--primary); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; font-size: 14px; background: rgba(0,0,0,0.1);">
-                    <span><b>Prev Bal:</b> <span style="color:${obColor}">${obText}</span></span>
-                    <span><b>+ Current Bill:</b> <span style="color:var(--danger)">₹${currentMonthPurchases.toFixed(2)}</span></span>
-                    <span><b>- Paid:</b> <span style="color:var(--success)">₹${currentMonthPaid.toFixed(2)}</span></span>
-                    <span style="font-size: 15px;"><b>Final Due:</b> <span style="color:${cbColor}; font-weight:bold;">${cbText}</span></span>
-                </div>
+                <div style="margin-top: 15px; padding: 12px 10px; border-top: 2px solid var(--primary); border-bottom: 2px solid var(--primary); display: flex; flex-direction: column; gap: 8px; font-size: 14px; background: rgba(0,0,0,0.1);">
+                    <div style="display:flex; justify-content:space-between;"><b>Current Bill:</b> <span style="color:var(--danger)">₹${currentMonthPurchases.toFixed(2)}</span></div>
+                    <div style="display:flex; justify-content:space-between;"><b>Prev Bal:</b> <span style="color:${obColor}">${obText}</span></div>
+                    <div style="display:flex; justify-content:space-between;"><b>- Paid:</b> <span style="color:var(--success)">₹${currentMonthPaid.toFixed(2)}</span></div>  
+                    <div style="display:flex; justify-content:space-between; font-size: 15px; border-top: 1px dashed #475569; padding-top: 8px; margin-top: 4px;"><b>Final Due:</b> <span style="color:${cbColor}; font-weight:bold;">${cbText}</span></div>                </div>
             `;
 
             return html;
@@ -3740,9 +3933,11 @@
             let companyName = currentUser.company && currentUser.company !== 'Default' ? currentUser.company : 'Dairy Ledger';
             let ownerAddress = currentUser.address || currentUser.addr || '';
             let ownerMobile = currentUser.mobile || '';
+            let companyLogo = currentUser.company_logo || '';
             printWindow.document.write('<h2>' + companyName.toUpperCase() + '</h2>');
             if (ownerAddress) printWindow.document.write('<p style="text-align:center; margin:2px 0; font-size:14px;">' + ownerAddress + '</p>');
             if (ownerMobile) printWindow.document.write('<p style="text-align:center; margin:2px 0 15px 0; font-size:14px;"><b>Mob:</b> ' + ownerMobile + '</p>');
+            if (companyLogo) printWindow.document.write('<img src="' + companyLogo + '" style="max-width:150px; max-height:80px; display:block; margin: 0 auto 10px auto;">');
             
             printWindow.document.write('<h3>Invoice : ' + custName + ' (' + monthName + ')</h3>');
             
@@ -3857,6 +4052,14 @@
             
             if(activeDiv) activeDiv.classList.remove('hidden');
             if(activeBtn) activeBtn.classList.add('active-tab');
+
+            if(tab === 'all') {
+                const dateInput = document.getElementById('transAllDate');
+                if (dateInput && !dateInput.value) {
+                    dateInput.value = new Date().toISOString().split('T')[0];
+                }
+                renderTrans(); // Render the table when tab is switched to
+            }
         }
         // --- GLOBAL ENTER KEY NAVIGATION ---
         document.addEventListener('keydown', function(e) {
