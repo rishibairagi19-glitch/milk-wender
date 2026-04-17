@@ -163,7 +163,7 @@ def login():
     company = user.get('company', '')
 
     # 🚀 SPEED FIX: Faltu heavy Base64 images aur passwords ko background list se hata diya
-    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, qr_code'
+    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, qr_code, license_expiry'
     c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no, seq_no_eve'
 
     user_to_return = user.copy()
@@ -186,7 +186,7 @@ def sync_data():
     name = req_data.get('name')
     
     # 🚀 SPEED FIX: Removed heavy 'qr_code' from background fetching to reduce megabytes of payload
-    u_cols = 'id, name, login_id, type, company, email, address, route, mobile'
+    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, license_expiry'
     c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no, seq_no_eve'
 
     def safe_get(f):
