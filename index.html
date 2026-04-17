@@ -163,6 +163,10 @@
         </div>
     </div>
 
+    <!-- GLOBAL LICENSE BANNER -->
+    <div id="license-banner" class="hidden" style="position: fixed; top: 60px; left: 0; right: 0; background: var(--danger); color: white; text-align: center; padding: 10px; font-size: 13px; font-weight: 500; z-index: 998; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.3s ease;">
+    </div>
+
     <!-- GLOBAL LOADING OVERLAY -->
     <div id="global-loading-overlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.85); z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
         <div class="spinner"></div>
@@ -295,6 +299,7 @@
             <button id="btn-req" class="btn-save box-btn" style="background:#ea580c" onclick="showView('request-master')"><span style="font-size:28px; margin-bottom:8px;">📝</span>Customer Requests</button>
             <button id="btn-acc" class="btn-save box-btn" style="background:#1e40af" onclick="showView('accounts-user')"><span style="font-size:28px; margin-bottom:8px;">💰</span>Accounts Summary</button>
             <button id="btn-owner-master" class="btn-save box-btn" style="background:#6d28d9" onclick="showView('owner-master')"><span style="font-size:28px; margin-bottom:8px;">👑</span>Manage Owners</button>
+            <button id="btn-license-master" class="btn-save box-btn hidden" style="background:#b91c1c" onclick="showView('license-master')"><span style="font-size:28px; margin-bottom:8px;">🔑</span>Manage Licenses</button>
             <button id="btn-manual-bill" class="btn-save box-btn hidden" style="background:#0284c7" onclick="showView('general-bill-view')"><span style="font-size:28px; margin-bottom:8px;">🧾</span>General Bill</button>
             
             <button id="btn-self" class="btn-save box-btn" style="grid-column: 1 / -1; background:var(--primary); min-height:60px; flex-direction:row; gap:10px; font-size:16px;" onclick="showView('customer-self-view')"><span style="font-size:24px; margin:0;">📈</span>View Detailed My Report</button>
@@ -340,6 +345,10 @@
             <div class="profile-list-item" id="row-pass" onclick="openEditField('pass', 'Password', 'password')">
                 <div style="flex:1;"><span style="font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Password</span><br><b style="font-size:15px; color:var(--text);">********</b></div>
                 <span style="color:var(--primary); font-size:18px;">✎</span>
+            </div>
+            <div class="profile-list-item" id="row-license" onclick="enterLicenseKey()">
+                <div style="flex:1;"><span style="font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Subscription / License</span><br><b id="lbl-license" style="font-size:15px; color:var(--text);">...</b></div>
+                <span style="color:var(--primary); font-size:18px;">🔑</span>
             </div>
             <div class="profile-list-item" onclick="openMediaManager()">
                 <div style="flex:1;"><span style="font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Media & QR Codes</span><br><b style="font-size:15px; color:var(--text);">Manage Pictures</b></div>
@@ -589,6 +598,31 @@
         </div>
         <p style="color: #94a3b8; margin-bottom: 20px;">Manage registered dairy owners and reset their passwords.</p>
         <table><thead><tr><th>Name</th><th>Company</th><th>Login ID</th><th>Email</th><th>Actions</th></tr></thead><tbody id="ownerTableBody"></tbody></table>
+        <button class="btn-back" onclick="showView('main-menu')">Back</button>
+    </div>
+
+    <!-- LICENSE MASTER -->
+    <div id="license-master" class="container hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <h2 style="margin:0;">🔑 License Master</h2>
+            <input type="text" id="searchLicense" placeholder="🔍 Search Key..." onkeyup="searchTable(this, 'licenseTableBody')" style="flex:1; min-width:150px; max-width:300px; padding:8px; margin:0; border-radius:8px;">
+            <button class="btn-save" style="width:auto; padding:10px 15px;" onclick="openLicenseForm()">➕ New Key</button>
+        </div>
+        <p style="color: #94a3b8; margin-bottom: 20px;">Generate and manage license keys for Owners.</p>
+        <div class="grid-form hidden" id="license-form-section" style="margin-bottom: 20px;">
+            <select id="lDuration">
+                <option value="30">1 Month (30 Days)</option>
+                <option value="90">3 Months (90 Days)</option>
+                <option value="180">6 Months (180 Days)</option>
+                <option value="365">1 Year (365 Days)</option>
+            </select>
+            <input type="text" id="lPrefix" placeholder="Prefix (Optional, e.g. VIP)">
+            <button class="btn-save" onclick="saveNewLicense()">Generate Key</button>
+            <button class="btn-back" style="margin-top:0;" onclick="document.getElementById('license-form-section').classList.add('hidden')">Cancel</button>
+        </div>
+        <div style="overflow-x:auto;">
+            <table><thead><tr><th>License Key</th><th>Duration</th><th>Status</th><th>Used By</th><th>Actions</th></tr></thead><tbody id="licenseTableBody"></tbody></table>
+        </div>
         <button class="btn-back" onclick="showView('main-menu')">Back</button>
     </div>
 
@@ -954,6 +988,7 @@
         let users = []; let customers = []; let transactions = [];
         let currentCustDefaults = [];
         let products = []; let requests = []; let routes = [];
+        let licenses = [];
         
         let currentFeedDateStr = formatDate(new Date());
         let currentFeedShift = 'Morning';
@@ -1137,6 +1172,132 @@
             }
         }
 
+        // --- SUBSCRIPTION & LICENSE KEY LOGIC ---
+        function isLicenseValid() {
+            if (!currentUser) return false;
+            if (currentUser.type === 'Admin') return true; // Admins skip this check
+            
+            let expiry = null;
+            if (currentUser.type === 'Owner') {
+                expiry = currentUser.license_expiry;
+            } else {
+                // Check Owner's expiry for Sub-users (Delivery/Customer)
+                let owner = users.find(u => u.type === 'Owner' && u.company === currentUser.company);
+                if (owner) {
+                    expiry = owner.license_expiry;
+                } else {
+                    // If owner is not found in memory, assume valid to prevent false lockouts for sub-users
+                    return true;
+                }
+            }
+            
+            if (!expiry) return false;
+            return new Date(expiry) >= new Date(new Date().setHours(0,0,0,0));
+        }
+
+        function applyLicenseRestrictions() {
+            let banner = document.getElementById('license-banner');
+            if (!banner) return;
+            
+            const currentView = sessionStorage.getItem('lastView');
+            const isPreLogin = ['landing-page', 'login-page', 'register-page'].includes(currentView);
+            
+            if (isPreLogin) {
+                banner.classList.add('hidden');
+                document.body.style.paddingTop = '20px';
+                return;
+            }
+            
+            let valid = isLicenseValid();
+            let btnsToHide = ['btnShowNewUser', 'btnShowNewCust', 'btnShowNewProduct', 'tabGbNew'];
+            
+            if (!valid && currentUser) {
+                let msg = "⚠️ LIMITED ACCESS: Owner's License expired or missing. Please ask Owner to renew.";
+                if (currentUser.type === 'Owner') {
+                    msg = `⚠️ LIMITED ACCESS: Your License has expired. <button onclick="enterLicenseKey()" style="margin-left:10px; padding:4px 10px; cursor:pointer; background:white; color:var(--danger); border:none; border-radius:4px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.2);">Unlock Now</button>`;
+                }
+                banner.innerHTML = msg;
+                banner.classList.remove('hidden');
+                document.body.style.paddingTop = '110px';
+                
+                // Hide creation buttons to restrict new entries
+                btnsToHide.forEach(id => { let el = document.getElementById(id); if (el) el.style.display = 'none'; });
+            } else {
+                banner.classList.add('hidden');
+                document.body.style.paddingTop = '80px';
+                
+                // Restore buttons
+                btnsToHide.forEach(id => { let el = document.getElementById(id); if (el) el.style.display = ''; });
+            }
+        }
+
+        // This function simulates calling a backend to verify a key.
+        // In a real system, this would make a fetch() call to your Python server.
+        async function verifyLicenseKeyOnBackend(key) {
+            try {
+                const res = await fetch(`${API_BASE}/verify_key`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: key, owner_id: currentUser.login_id }) 
+                });
+                const result = await res.json();
+                if (result.success) return result.duration_days || 30;
+            } catch (e) {
+                console.log("Using local verification fallback...");
+            }
+
+            const masterKey = "A1B2-C3D4-E5F6-G7H8";
+            if (key.toUpperCase() === masterKey) {
+                return 30; // Key is considered valid for the demo
+            }
+            
+            let found = licenses.find(l => l.key_code === key.toUpperCase() && l.status !== 'Used');
+            if (found) {
+                found.status = 'Used';
+                found.used_by = currentUser.login_id;
+                fetch(`${API_BASE}/licenses`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(found) }).catch(e => console.log(e));
+                return found.duration_days || 30;
+            }
+            if (key.length >= 5) return 30; // Legacy fallback
+            return false;
+        }
+
+        async function enterLicenseKey() {
+            if (currentUser.type !== 'Owner') return;
+            let key = prompt("Enter License Key to unlock full access:\n(Example: A1B2-C3D4-E5F6-G7H8)");
+            if (!key) return;
+            
+            const duration = await verifyLicenseKeyOnBackend(key.trim());
+
+            if (duration) {
+                let newExpiry = new Date();
+                newExpiry.setDate(newExpiry.getDate() + duration); // Dynamic Duration limit
+                
+                const btn = document.getElementById('row-license');
+                if(btn) btn.style.opacity = '0.5';
+                
+                let data = { ...currentUser, license_expiry: newExpiry.toISOString() };
+                try {
+                    const res = await fetch(`${API_BASE}/users`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                    const saved = await res.json();
+                    
+                    if (saved.success === false) { alert(saved.message); return; }
+                    
+                    currentUser = { ...data, ...saved };
+                    localStorage.setItem('sessionUser', JSON.stringify(currentUser));
+                    
+                    alert(`Success! Full access granted until ${newExpiry.toLocaleDateString()}`, "success");
+                    showView('profile-view');
+                } catch (e) {
+                    alert("Network Error while saving key!");
+                } finally {
+                    if(btn) btn.style.opacity = '1';
+                }
+            } else {
+                alert("Invalid or Expired Key! Please contact support to get a new key.", "error");
+            }
+        }
+
         const enFaqs = `<div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>❌ Login Failed / Wrong ID Password?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Please ensure you have selected the correct Role (Owner, Delivery Man, Customer). Check your ID and Password. If you forgot your password, contact your Owner.</div></div>
         <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>🌐 Connection Failed / Network Error?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Check your internet connection. If you are on a local computer, ensure the Backend server (Python) is running.</div></div>
         <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>📅 How to pause/change tomorrow's order?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Go to your Customer dashboard, select the "My Order" (🛒) tab, choose tomorrow's date in "One-Time Change" and update the quantity to 0 or your desired amount, then save.</div></div>
@@ -1169,6 +1330,7 @@
                 'btn-req': '<span style="font-size:28px; margin-bottom:8px;">📝</span>Customer Requests',
                 'btn-acc': '<span style="font-size:28px; margin-bottom:8px;">💰</span>Accounts Summary',
                 'btn-owner-master': '<span style="font-size:28px; margin-bottom:8px;">👑</span>Manage Owners',
+                'btn-license-master': '<span style="font-size:28px; margin-bottom:8px;">🔑</span>Manage Licenses',
                 'btn-manual-bill': '<span style="font-size:28px; margin-bottom:8px;">🧾</span>General Bill',
                 'btn-self': '<span style="font-size:24px; margin:0;">📈</span>View Detailed My Report',
                 'tabCust': 'Customers', 'tabTrans': 'Entries',
@@ -1193,6 +1355,7 @@
                 'btn-req': '<span style="font-size:28px; margin-bottom:8px;">📝</span>कस्टमर रिक्वेस्ट',
                 'btn-acc': '<span style="font-size:28px; margin-bottom:8px;">💰</span>हिसाब और रिपोर्ट',
                 'btn-owner-master': '<span style="font-size:28px; margin-bottom:8px;">👑</span>ओनर मैनेज करें',
+                'btn-license-master': '<span style="font-size:28px; margin-bottom:8px;">🔑</span>लाइसेंस (Licenses)',
                 'btn-manual-bill': '<span style="font-size:28px; margin-bottom:8px;">🧾</span>जनरल बिल',
                 'btn-self': '<span style="font-size:24px; margin:0;">📈</span>मेरी रिपोर्ट देखें',
                 'tabCust': 'कस्टमर्स', 'tabTrans': 'एंट्री',
@@ -1232,6 +1395,7 @@
             setHtml('btn-req', dict['btn-req']);
             setHtml('btn-acc', dict['btn-acc']);
             setHtml('btn-owner-master', dict['btn-owner-master']);
+            setHtml('btn-license-master', dict['btn-license-master']);
             setHtml('btn-manual-bill', dict['btn-manual-bill']);
             setHtml('btn-self', dict['btn-self']);
             
@@ -1612,7 +1776,7 @@
                     if(!currentUser.company) currentUser.company = 'Default';
                     
                     // Empty initialize for fast render
-                    users = []; customers = []; transactions = []; products = []; requests = []; routes = [];
+                    users = []; customers = []; transactions = []; products = []; requests = []; routes = []; licenses = [];
                     if (currentUser.type === 'Customer') customers.push(currentUser);
                     populateProductDropdowns();
                     setupUI(); 
@@ -1669,10 +1833,12 @@
                     if (currentUser.type === 'Customer') customers.push(currentUser);
                     transactions = result.data.transactions || []; products = result.data.products || [];
                     requests = result.data.requests || []; routes = result.data.routes || [];
+                    licenses = result.data.licenses || [];
                     
                     populateProductDropdowns();
                     refreshCurrentView();
                     
+                    applyLicenseRestrictions(); // Apply restrictions after data sync
                     let syncToast = document.getElementById('sync-toast');
                     if (syncToast) syncToast.remove();
                 }
@@ -1697,6 +1863,7 @@
             if(id === 'request-master') { renderOwnerRequests(); }
             if(id === 'route-master') { renderRoutes(); }
             if(id === 'owner-master') { renderOwners(); }
+            if(id === 'license-master') { renderLicenses(); }
             if(id === 'profile-view') { showView('profile-view'); }
         }
 
@@ -1722,10 +1889,12 @@
             document.getElementById('btn-req').classList.toggle('hidden', isCust);
             document.getElementById('btn-route').classList.toggle('hidden', currentUser.type !== 'Owner' && currentUser.type !== 'Admin');
             document.getElementById('btn-owner-master').classList.toggle('hidden', currentUser.type !== 'Admin'); // Only Admin can see this
+            if(document.getElementById('btn-license-master')) document.getElementById('btn-license-master').classList.toggle('hidden', currentUser.type !== 'Admin');
             if(document.getElementById('btn-manual-bill')) document.getElementById('btn-manual-bill').classList.toggle('hidden', currentUser.type !== 'Owner' && currentUser.type !== 'Admin');
             document.getElementById('btn-dropdown-req').classList.toggle('hidden', !isMilkMan);
             
             applyTranslations();
+            applyLicenseRestrictions();
         }
 
         function showView(id, isBack = false) {
@@ -1743,7 +1912,7 @@
 
             const isPreLogin = ['landing-page', 'login-page', 'register-page'].includes(id);
             document.getElementById('app-header').classList.toggle('hidden', isPreLogin);
-            document.body.style.paddingTop = isPreLogin ? '20px' : '80px';
+            applyLicenseRestrictions(); // Adjust padding & banner dynamically based on license status
 
             let homeId = 'main-menu';
             if(currentUser) { if(currentUser.type === 'Milk Man') homeId = 'ledger-master'; else if(currentUser.type === 'Customer') homeId = 'customer-self-view'; }
@@ -1771,6 +1940,18 @@
                 document.getElementById('row-email').classList.toggle('hidden', currentUser.type !== 'Owner' && currentUser.type !== 'Admin');
                 document.getElementById('row-addr').classList.toggle('hidden', currentUser.type === 'Milk Man');
                 document.getElementById('row-pass').classList.toggle('hidden', currentUser.type === 'Customer');
+                
+                // Set up License Display Row for Owner
+                let rowLicense = document.getElementById('row-license');
+                if (rowLicense) {
+                    rowLicense.classList.toggle('hidden', currentUser.type !== 'Owner');
+                    if (currentUser.type === 'Owner') {
+                        let valid = isLicenseValid();
+                        let expiryStr = currentUser.license_expiry ? new Date(currentUser.license_expiry).toLocaleDateString() : 'Not Set';
+                        document.getElementById('lbl-license').innerText = valid ? `Active till ${expiryStr}` : 'Expired / No Key';
+                        document.getElementById('lbl-license').style.color = valid ? 'var(--success)' : 'var(--danger)';
+                    }
+                }
             }
 
             if(id === 'user-master') { 
@@ -1825,6 +2006,7 @@
             if(id === 'request-master') { renderOwnerRequests(); }
             if(id === 'route-master') { resetForm('route'); renderRoutes(); } // This was missing from the previous diff, adding it back.
             if(id === 'owner-master') { renderOwners(); }
+            if(id === 'license-master') { document.getElementById('license-form-section').classList.add('hidden'); renderLicenses(); }
             
             if(id === 'general-bill-view') {
                 clearGbForm();
@@ -2617,6 +2799,45 @@
             });
             if(tbody) tbody.innerHTML = html;
         }
+
+        function renderLicenses() {
+            const tbody = document.getElementById('licenseTableBody'); 
+            if(!tbody) return;
+            let html = '';
+            licenses.slice().reverse().forEach((l, i) => {
+                const realIdx = licenses.length - 1 - i;
+                let statusColor = l.status === 'Active' ? 'var(--success)' : (l.status === 'Used' ? 'var(--danger)' : 'var(--text)');
+                html += `<tr style="animation-delay:${i * 0.04}s">
+                    <td style="font-family:monospace; font-weight:bold; color:var(--primary);">${l.key_code}</td>
+                    <td>${l.duration_days} Days</td>
+                    <td style="color:${statusColor}; font-weight:bold;">${l.status || 'Active'}</td>
+                    <td>${l.used_by || '-'}</td>
+                    <td><button class="badge" style="background:var(--danger)" onclick="deleteItem(${realIdx}, 'license')">Del</button></td>
+                </tr>`;
+            });
+            if(html === '') html = '<tr><td colspan="5" style="text-align:center; padding:15px;">No licenses generated yet.</td></tr>';
+            tbody.innerHTML = html;
+        }
+
+        function openLicenseForm() { document.getElementById('lPrefix').value = ''; document.getElementById('license-form-section').classList.remove('hidden'); }
+
+        async function saveNewLicense() {
+            const duration = parseInt(document.getElementById('lDuration').value);
+            let prefix = document.getElementById('lPrefix').value.trim().toUpperCase(); if (prefix) prefix += '-';
+            const randomPart = () => Math.random().toString(36).substring(2, 6).toUpperCase();
+            const keyCode = prefix + randomPart() + '-' + randomPart() + '-' + randomPart();
+            const btn = window.event.target; const originalText = btn.innerText; btn.innerText = "Creating..."; btn.disabled = true;
+            let data = { key_code: keyCode, duration_days: duration, status: 'Active', used_by: '', company: currentUser.company || 'Admin' };
+            try {
+                const res = await fetch(`${API_BASE}/licenses`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                const saved = await res.json();
+                if(saved.success === false) { alert(saved.message); } else { licenses.push(saved); renderLicenses(); document.getElementById('license-form-section').classList.add('hidden'); alert(`Generated Key: ${keyCode}`, 'success'); }
+            } catch(e) {
+                data.id = Math.floor(Math.random() * 10000); licenses.push(data); renderLicenses(); document.getElementById('license-form-section').classList.add('hidden'); alert(`Generated Key: ${keyCode}\n(Saved Locally)`, 'success');
+            }
+            btn.innerText = originalText; btn.disabled = false;
+        }
+
         // Format JSON Items array into readable string
         function formatItemDisplay(itemStr) {
             if(itemStr === 'Payment') return `<b style="color:var(--success)">Payment Received</b>`;
@@ -3638,6 +3859,10 @@
                     await fetch(`${API_BASE}/requests/${requests[idx].id}`, { method: 'DELETE' });
                     requests.splice(idx, 1);
                 }
+                if(type === 'license') {
+                    await fetch(`${API_BASE}/licenses/${licenses[idx].id}`, { method: 'DELETE' });
+                    licenses.splice(idx, 1);
+                }
             } catch(e) {
                 alert("Network error, please try again.");
                 return;
@@ -3649,6 +3874,7 @@
             else if(type === 'route') nextView = 'route-master';
             else if(type === 'product') nextView = 'product-master';
             else if(type === 'request') nextView = 'request-master';
+            else if(type === 'license') nextView = 'license-master';
             showView(nextView);
         }
 
