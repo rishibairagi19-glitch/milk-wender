@@ -205,6 +205,7 @@ def sync_data():
                 f_p = executor.submit(lambda: supabase.table('sys_products').select('*').execute().data)
                 f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').order('id', desc=True).limit(20).execute().data)
                 f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').execute().data)
+                f_l = executor.submit(lambda: supabase.table('sys_licenses').select('*').execute().data)
             else:
                 f_u = executor.submit(lambda: supabase.table('sys_users').select(u_cols).eq('company', company).execute().data)
                 f_c = executor.submit(lambda: supabase.table('sys_customers').select(c_cols).eq('company', company).execute().data)
@@ -212,7 +213,8 @@ def sync_data():
                 f_p = executor.submit(lambda: supabase.table('sys_products').select('*').eq('company', company).execute().data)
                 f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('company', company).order('id', desc=True).limit(20).execute().data)
                 f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').eq('company', company).execute().data)
-        return jsonify({"success": True, "data": {"users": safe_get(f_u), "customers": safe_get(f_c), "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro)}})
+                f_l = executor.submit(lambda: [])
+        return jsonify({"success": True, "data": {"users": safe_get(f_u), "customers": safe_get(f_c), "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro), "licenses": safe_get(f_l)}})
         
     elif role == 'Milk Man':
         milkman_customers_res = supabase.table('sys_customers').select(c_cols).eq('company', company).eq('milkman_id', login_id).execute()
@@ -234,7 +236,7 @@ def sync_data():
         try: milkman_trans = f_t.result()
         except Exception: milkman_trans = []
         
-        return jsonify({"success": True, "data": {"users": [], "customers": milkman_customers, "transactions": milkman_trans, "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro)}})
+        return jsonify({"success": True, "data": {"users": [], "customers": milkman_customers, "transactions": milkman_trans, "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro), "licenses": []}})
         
     elif role == 'Customer':
         with ThreadPoolExecutor(max_workers=5) as executor:
@@ -243,7 +245,7 @@ def sync_data():
             f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('cust_id', login_id).eq('company', company).order('id', desc=True).limit(15).execute().data)
             f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').eq('company', company).execute().data)
             f_u = executor.submit(lambda: supabase.table('sys_users').select(u_cols + ', qr_code').eq('company', company).eq('type', 'Owner').execute().data)
-        return jsonify({"success": True, "data": {"users": safe_get(f_u), "customers": [], "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro)}})
+        return jsonify({"success": True, "data": {"users": safe_get(f_u), "customers": [], "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro), "licenses": []}})
     return jsonify({"success": False})
 
 
@@ -252,7 +254,7 @@ def sync_data():
 def save_data(table_name):
     data = request.json
     
-    if table_name not in ['users', 'customers', 'transactions', 'products', 'requests', 'routes']:
+    if table_name not in ['users', 'customers', 'transactions', 'products', 'requests', 'routes', 'licenses']:
         return jsonify({"success": False, "message": "Invalid table"}), 400
         
     db_table = 'sys_' + (table_name if table_name != 'transactions' else 'trans')
@@ -413,11 +415,30 @@ def reset_password():
 
 @app.route('/api/<table_name>/<int:item_id>', methods=['DELETE'])
 def delete_data(table_name, item_id):
-    if table_name not in ['users', 'customers', 'transactions', 'products', 'requests', 'routes']:
+    if table_name not in ['users', 'customers', 'transactions', 'products', 'requests', 'routes', 'licenses']:
         return jsonify({"success": False, "message": "Invalid table"}), 400
     db_table = 'sys_' + (table_name if table_name != 'transactions' else 'trans')
     supabase.table(db_table).delete().eq('id', item_id).execute()
     return jsonify({"success": True})
+
+@app.route('/api/verify_key', methods=['POST'])
+def verify_key():
+    data = request.json
+    key = (data.get('key') or '').strip().upper()
+    owner_id = data.get('owner_id')
+    
+    if not key:
+        return jsonify({'success': False, 'message': 'Invalid Key'})
+        
+    res = supabase.table('sys_licenses').select('*').eq('key_code', key).eq('status', 'Active').execute()
+    if res.data:
+        license_data = res.data[0]
+        duration_days = license_data.get('duration_days', 30)
+        
+        supabase.table('sys_licenses').update({'status': 'Used', 'used_by': owner_id}).eq('id', license_data['id']).execute()
+        return jsonify({'success': True, 'duration_days': duration_days})
+        
+    return jsonify({'success': False, 'message': 'Invalid or Expired Key'})
 
 # New API to get opening balance for a customer for a specific month/year
 @app.route('/api/opening_balance', methods=['GET'])
