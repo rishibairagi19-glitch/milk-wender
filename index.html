@@ -838,6 +838,19 @@
         </div>
     </div>
 
+    <!-- LICENSE ENTRY MODAL -->
+    <div id="licenseModal" class="hidden" style="position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10006; display:flex; justify-content:center; align-items:center; padding:20px;">
+        <div class="modal-box" style="background:var(--card); width:100%; max-width:400px; padding:25px; border-radius:16px; border:1px solid #475569; text-align:center;">
+            <h3 style="margin-top:0; margin-bottom: 10px; color:var(--primary); font-size: 24px;">🔑 Enter License Key</h3>
+            <p style="color:#94a3b8; font-size:13px; margin-top:0; margin-bottom:20px;">Please enter your premium license key to unlock full access.</p>
+            <input type="text" id="inputLicenseKey" placeholder="e.g. VIP-A1B2-C3D4" style="text-align:center; font-family:monospace; font-size:18px; font-weight:bold; text-transform:uppercase; letter-spacing:1px; margin-bottom:20px;">
+            <div style="display:flex; gap:10px;">
+                <button class="btn-save" id="btnSubmitLicense" onclick="submitLicenseKey()">Verify & Unlock</button>
+                <button class="btn-back" style="margin:0;" onclick="closeLicenseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- EDIT PROFILE FIELD MODAL -->
     <div id="editFieldModal" class="hidden" style="position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10005; display:flex; justify-content:center; align-items:center; padding:20px;">
         <div class="modal-box" style="background:var(--card); width:100%; max-width:400px; padding:25px; border-radius:16px; border:1px solid #475569;">
@@ -1264,38 +1277,48 @@
 
         async function enterLicenseKey() {
             if (currentUser.type !== 'Owner') return;
-            let key = prompt("Enter License Key to unlock full access:\n(Example: A1B2-C3D4-E5F6-G7H8)");
-            if (!key) return;
+            document.getElementById('inputLicenseKey').value = '';
+            document.getElementById('licenseModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('inputLicenseKey').focus(), 100);
+        }
+
+        function closeLicenseModal() { document.getElementById('licenseModal').classList.add('hidden'); }
+
+        async function submitLicenseKey() {
+            let key = document.getElementById('inputLicenseKey').value.trim();
+            if (!key) return alert("Please enter a license key!");
             
-            const duration = await verifyLicenseKeyOnBackend(key.trim());
+            const btn = document.getElementById('btnSubmitLicense');
+            btn.innerText = "Verifying...";
+            btn.disabled = true;
+
+            const duration = await verifyLicenseKeyOnBackend(key);
 
             if (duration) {
                 let newExpiry = new Date();
                 newExpiry.setDate(newExpiry.getDate() + duration); // Dynamic Duration limit
-                
-                const btn = document.getElementById('row-license');
-                if(btn) btn.style.opacity = '0.5';
                 
                 let data = { ...currentUser, license_expiry: newExpiry.toISOString() };
                 try {
                     const res = await fetch(`${API_BASE}/users`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
                     const saved = await res.json();
                     
-                    if (saved.success === false) { alert(saved.message); return; }
+                    if (saved.success === false) { alert(saved.message); btn.innerText = "Verify & Unlock"; btn.disabled = false; return; }
                     
                     currentUser = { ...data, ...saved };
                     localStorage.setItem('sessionUser', JSON.stringify(currentUser));
                     
                     alert(`Success! Full access granted until ${newExpiry.toLocaleDateString()}`, "success");
+                    closeLicenseModal();
                     showView('profile-view');
                 } catch (e) {
-                    alert("Network Error while saving key!");
-                } finally {
-                    if(btn) btn.style.opacity = '1';
+                    alert("Network Error while saving key! Please try again.", "error");
                 }
             } else {
                 alert("Invalid or Expired Key! Please contact support to get a new key.", "error");
             }
+            btn.innerText = "Verify & Unlock";
+            btn.disabled = false;
         }
 
         const enFaqs = `<div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>❌ Login Failed / Wrong ID Password?</span><span class="faq-icon">▼</span></div><div class="faq-answer">Please ensure you have selected the correct Role (Owner, Delivery Man, Customer). Check your ID and Password. If you forgot your password, contact your Owner.</div></div>
