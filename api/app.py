@@ -185,7 +185,8 @@ def sync_data():
     company = req_data.get('company')
     name = req_data.get('name')
     
-    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, qr_code'
+    # 🚀 SPEED FIX: Removed heavy 'qr_code' from background fetching to reduce megabytes of payload
+    u_cols = 'id, name, login_id, type, company, email, address, route, mobile'
     c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no, seq_no_eve'
 
     def safe_get(f):
@@ -202,14 +203,14 @@ def sync_data():
                 f_c = executor.submit(lambda: supabase.table('sys_customers').select(c_cols).execute().data)
                 f_t = executor.submit(lambda: supabase.table('sys_trans').select('*').order('id', desc=True).limit(300).execute().data)
                 f_p = executor.submit(lambda: supabase.table('sys_products').select('*').execute().data)
-                f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').order('id', desc=True).limit(50).execute().data)
+                f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').order('id', desc=True).limit(20).execute().data)
                 f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').execute().data)
             else:
                 f_u = executor.submit(lambda: supabase.table('sys_users').select(u_cols).eq('company', company).execute().data)
                 f_c = executor.submit(lambda: supabase.table('sys_customers').select(c_cols).eq('company', company).execute().data)
                 f_t = executor.submit(lambda: supabase.table('sys_trans').select('*').eq('company', company).order('id', desc=True).limit(300).execute().data)
                 f_p = executor.submit(lambda: supabase.table('sys_products').select('*').eq('company', company).execute().data)
-                f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('company', company).order('id', desc=True).limit(50).execute().data)
+                f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('company', company).order('id', desc=True).limit(20).execute().data)
                 f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').eq('company', company).execute().data)
         return jsonify({"success": True, "data": {"users": safe_get(f_u), "customers": safe_get(f_c), "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro)}})
         
@@ -218,23 +219,30 @@ def sync_data():
         milkman_customers = milkman_customers_res.data if milkman_customers_res.data else []
         customer_names = [c['name'] for c in milkman_customers]
 
+        def get_mm_trans():
+            if not customer_names: return []
+            if len(customer_names) > 40:
+                return supabase.table('sys_trans').select('*').eq('company', company).order('id', desc=True).limit(150).execute().data
+            return supabase.table('sys_trans').select('*').eq('company', company).in_('cust', customer_names).order('id', desc=True).limit(150).execute().data
+
         with ThreadPoolExecutor(max_workers=4) as executor:
-            if customer_names:
-                f_t = executor.submit(lambda: supabase.table('sys_trans').select('*').eq('company', company).in_('cust', customer_names).order('id', desc=True).limit(200).execute().data)
-            else:
-                f_t = executor.submit(lambda: [])
+            f_t = executor.submit(get_mm_trans)
             f_p = executor.submit(lambda: supabase.table('sys_products').select('*').eq('company', company).execute().data)
-            f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('company', company).eq('milkman_id', login_id).order('id', desc=True).limit(50).execute().data)
+            f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('company', company).eq('milkman_id', login_id).order('id', desc=True).limit(10).execute().data)
             f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').eq('company', company).execute().data)
-        return jsonify({"success": True, "data": {"users": [], "customers": milkman_customers, "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro)}})
+            
+        try: milkman_trans = f_t.result()
+        except Exception: milkman_trans = []
+        
+        return jsonify({"success": True, "data": {"users": [], "customers": milkman_customers, "transactions": milkman_trans, "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro)}})
         
     elif role == 'Customer':
         with ThreadPoolExecutor(max_workers=5) as executor:
             f_t = executor.submit(lambda: supabase.table('sys_trans').select('*').eq('cust', name).eq('company', company).order('id', desc=True).limit(100).execute().data)
             f_p = executor.submit(lambda: supabase.table('sys_products').select('*').eq('company', company).execute().data)
-            f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('cust_id', login_id).eq('company', company).order('id', desc=True).limit(20).execute().data)
+            f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('cust_id', login_id).eq('company', company).order('id', desc=True).limit(15).execute().data)
             f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').eq('company', company).execute().data)
-            f_u = executor.submit(lambda: supabase.table('sys_users').select(u_cols).eq('company', company).execute().data)
+            f_u = executor.submit(lambda: supabase.table('sys_users').select(u_cols + ', qr_code').eq('company', company).eq('type', 'Owner').execute().data)
         return jsonify({"success": True, "data": {"users": safe_get(f_u), "customers": [], "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro)}})
     return jsonify({"success": False})
 
@@ -324,19 +332,47 @@ def save_data(table_name):
             req_res = supabase.table('sys_requests').select('*').eq('id', item_id).execute()
             if req_res.data:
                 req_data = req_res.data[0]
-                try:
-                    nums = re.findall(r'\d+\.?\d*', str(req_data.get('req_qty', '0')))
-                    payment_amount = float(nums[0]) if nums else 0.0
-                    supabase.table('sys_trans').insert({
-                        "date": req_data['req_date'], "cust": req_data['cust_name'], "item": 'Payment',
-                        "qty": '-', "rate": payment_amount, "total": payment_amount,
-                        "company": req_data['company'], "shift": 'Morning'
-                    }).execute()
-                except Exception: pass
+                if req_data.get('status') not in ['Accepted', 'Approved']:
+                    try:
+                        nums = re.findall(r'\d+\.?\d*', str(req_data.get('req_qty', '0')))
+                        payment_amount = float(nums[0]) if nums else 0.0
+                        
+                        existing_pay = supabase.table('sys_trans').select('id', 'total').eq('cust', req_data['cust_name']).eq('date', req_data['req_date']).eq('company', req_data['company']).eq('item', 'Payment').execute()
+                        if existing_pay.data:
+                            old_total = float(existing_pay.data[0].get('total') or 0)
+                            new_total = old_total + payment_amount
+                            supabase.table('sys_trans').update({"rate": new_total, "total": new_total}).eq('id', existing_pay.data[0]['id']).execute()
+                        else:
+                            supabase.table('sys_trans').insert({
+                                "date": req_data['req_date'], "cust": req_data['cust_name'], "item": 'Payment',
+                                "qty": '-', "rate": payment_amount, "total": payment_amount,
+                                "company": req_data['company'], "shift": 'Morning'
+                            }).execute()
+                    except Exception: pass
         
         res = supabase.table(db_table).update(data).eq('id', item_id).execute()
         return jsonify(res.data[0] if res.data else data)
         
+    # 🛡️ BUG FIX: Add server-side check to prevent duplicate transaction entries
+    if not data.get('id') and table_name == 'transactions':
+        shift_val = data.get('shift')
+        q = supabase.table(db_table).select('id').eq('cust', data.get('cust')).eq('date', data.get('date')).eq('company', data.get('company'))
+        
+        if shift_val:
+            q = q.or_(f"shift.eq.{shift_val},shift.is.null")
+            
+        if data.get('item') == 'Payment':
+            q = q.eq('item', 'Payment')
+        else:
+            q = q.neq('item', 'Payment')
+            
+        existing_res = q.execute()
+        
+        if existing_res.data:
+            item_id = existing_res.data[0]['id']
+            res = supabase.table(db_table).update(data).eq('id', item_id).execute()
+            return jsonify(res.data[0] if res.data else data)
+
     # INSERT NEW RECORD
     if table_name == 'users':
         if data.get('type') == 'Milk Man':
@@ -393,28 +429,27 @@ def get_opening_balance():
         month = int(request.args.get('month', 0))
         year = int(request.args.get('year', 0))
     except (TypeError, ValueError):
-        return jsonify({"opening_balance": 0, "error": "Invalid month or year parameters"}), 400
+        return jsonify({"opening_balance": 0, "transactions": [], "error": "Invalid month or year parameters"}), 400
 
     # Fetch all transactions to avoid string comparison issues with dates
-    transactions_res = supabase.table('sys_trans').select('date, item, total, shift').eq('cust', cust_name).eq('company', company).neq('shift', 'General Bill').execute()
+    transactions_res = supabase.table('sys_trans').select('*').eq('cust', cust_name).eq('company', company).neq('shift', 'General Bill').execute()
     transactions_all = transactions_res.data if transactions_res.data else []
 
     opening_balance = 0
+    month_transactions = []
+
     for t in transactions_all:
         d_str = str(t.get('date', '')).strip()
         t_year, t_month = 0, 0
         try:
-            if '-' in d_str or '/' in d_str:
-                parts = d_str.replace('/', '-').split('-')
-                if len(parts) == 3:
-                    if len(parts[0]) == 4:
-                        t_year, t_month = int(parts[0]), int(parts[1])
-                    else:
-                        t_year, t_month = int(parts[2]), int(parts[1])
-                elif len(parts) == 2:
-                    current_year = datetime.datetime.now().year
-                    t_year, t_month = current_year, int(parts[1])
-        except Exception:
+            # Standardize date parsing
+            parts = re.split(r'[-/]', d_str)
+            if len(parts) == 3:
+                if len(parts[0]) == 4: # YYYY-MM-DD
+                    t_year, t_month = int(parts[0]), int(parts[1])
+                elif len(parts[2]) == 4: # DD-MM-YYYY
+                    t_year, t_month = int(parts[2]), int(parts[1])
+        except (ValueError, IndexError):
             continue
             
         if t_year > 0 and t_month > 0:
@@ -423,8 +458,10 @@ def get_opening_balance():
                     opening_balance -= abs(float(t.get('total') or 0))
                 else:
                     opening_balance += float(t.get('total') or 0)
+            elif t_year == year and t_month == month:
+                month_transactions.append(t)
     
-    return jsonify({"opening_balance": opening_balance})
+    return jsonify({"opening_balance": opening_balance, "transactions": month_transactions})
 
 if __name__ == '__main__':
     ensure_admin()
