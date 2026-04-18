@@ -131,9 +131,9 @@ def login():
 
     try:
         if role == 'Customer':
-            or_cond = f'{id_field}.eq."{login_id}",username.eq."{login_id}",mobile.eq."{login_id}"'
+            or_cond = f'{id_field}.ilike.{login_id},username.ilike.{login_id},mobile.eq.{login_id}'
         else:
-            or_cond = f'{id_field}.eq."{login_id}",username.eq."{login_id}",mobile.eq."{login_id}",email.eq."{login_id}"'
+            or_cond = f'{id_field}.ilike.{login_id},username.ilike.{login_id},mobile.eq.{login_id},email.ilike.{login_id}'
         user_res = supabase.table(table).select('*').or_(or_cond).execute()
         user = user_res.data[0] if user_res.data else None
     except Exception as e:
@@ -270,9 +270,9 @@ def save_data(table_name):
         
         # 🚀 SPEED FIX: Combine 4 queries into 1 query
         or_conditions = []
-        if username: or_conditions.append(f'username.eq."{username}"')
-        if user_type and mobile: or_conditions.append(f'mobile.eq."{mobile}"')
-        if user_type and email: or_conditions.append(f'email.eq."{email}"')
+        if username: or_conditions.append(f'username.ilike.{username}')
+        if user_type and mobile: or_conditions.append(f'mobile.eq.{mobile}')
+        if user_type and email: or_conditions.append(f'email.ilike.{email}')
 
         if or_conditions:
             q = supabase.table('sys_users').select('id, username, mobile, email, type').or_(",".join(or_conditions))
@@ -294,8 +294,8 @@ def save_data(table_name):
         
         # 🚀 SPEED FIX: Combine queries
         or_conditions = []
-        if username: or_conditions.append(f'username.eq."{username}"')
-        if mobile: or_conditions.append(f'mobile.eq."{mobile}"')
+        if username: or_conditions.append(f'username.ilike.{username}')
+        if mobile: or_conditions.append(f'mobile.eq.{mobile}')
         
         if or_conditions:
             q = supabase.table('sys_customers').select('id, username, mobile').or_(",".join(or_conditions))
