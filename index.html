@@ -621,7 +621,7 @@
             <button class="btn-back" style="margin-top:0;" onclick="document.getElementById('license-form-section').classList.add('hidden')">Cancel</button>
         </div>
         <div style="overflow-x:auto;">
-            <table><thead><tr><th>License Key</th><th>Duration</th><th>Status</th><th>Used By</th><th>Used On</th><th>Actions</th></tr></thead><tbody id="licenseTableBody"></tbody></table>
+            <table><thead><tr><th>License Key</th><th>Duration</th><th>Status</th><th>Used By</th><th>Actions</th></tr></thead><tbody id="licenseTableBody"></tbody></table>
         </div>
         <button class="btn-back" onclick="showView('main-menu')">Back</button>
     </div>
@@ -2830,17 +2830,15 @@
             licenses.slice().reverse().forEach((l, i) => {
                 const realIdx = licenses.length - 1 - i;
                 let statusColor = l.status === 'Active' ? 'var(--success)' : (l.status === 'Used' ? 'var(--danger)' : 'var(--text)');
-                let usedOnDate = l.used_on ? new Date(l.used_on).toLocaleDateString() : '-';
                 html += `<tr style="animation-delay:${i * 0.04}s">
                     <td style="font-family:monospace; font-weight:bold; color:var(--primary);">${l.key_code}</td>
                     <td>${l.duration_days} Days</td>
                     <td style="color:${statusColor}; font-weight:bold;">${l.status || 'Active'}</td>
                     <td>${l.used_by || '-'}</td>
-                    <td>${usedOnDate}</td>
                     <td><button class="badge" style="background:var(--danger)" onclick="deleteItem(${realIdx}, 'license')">Del</button></td>
                 </tr>`;
             });
-            if(html === '') html = '<tr><td colspan="6" style="text-align:center; padding:15px;">No licenses generated yet.</td></tr>';
+            if(html === '') html = '<tr><td colspan="5" style="text-align:center; padding:15px;">No licenses generated yet.</td></tr>';
             tbody.innerHTML = html;
         }
 
