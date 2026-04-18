@@ -597,7 +597,7 @@
             <input type="text" id="searchOwner" placeholder="🔍 Search Owner..." onkeyup="searchTable(this, 'ownerTableBody')" style="flex:1; min-width:150px; max-width:300px; padding:8px; margin:0; border-radius:8px;">
         </div>
         <p style="color: #94a3b8; margin-bottom: 20px;">Manage registered dairy owners and reset their passwords.</p>
-        <table><thead><tr><th>Name</th><th>Company</th><th>Login ID</th><th>Email & License</th><th>Actions</th></tr></thead><tbody id="ownerTableBody"></tbody></table>
+        <table><thead><tr><th>Name</th><th>Company</th><th>Login ID</th><th>Email</th><th>Actions</th></tr></thead><tbody id="ownerTableBody"></tbody></table>
         <button class="btn-back" onclick="showView('main-menu')">Back</button>
     </div>
 
@@ -621,7 +621,7 @@
             <button class="btn-back" style="margin-top:0;" onclick="document.getElementById('license-form-section').classList.add('hidden')">Cancel</button>
         </div>
         <div style="overflow-x:auto;">
-            <table><thead><tr><th>License Key</th><th>Duration</th><th>Status</th><th>Used By</th><th>Actions</th></tr></thead><tbody id="licenseTableBody"></tbody></table>
+            <table><thead><tr><th>License Key</th><th>Duration</th><th>Status</th><th>Used By</th><th>Used On</th><th>Actions</th></tr></thead><tbody id="licenseTableBody"></tbody></table>
         </div>
         <button class="btn-back" onclick="showView('main-menu')">Back</button>
     </div>
@@ -991,7 +991,9 @@
         // 🚀 SPEED FIX: Hardcoded 'RICK-PC' se local network me DNS resolution me 2-3 seconds lagte hain.
         // Ab dynamic base URL use hoga (0 delay).
         const API_BASE = (window.location.hostname === '' || window.location.protocol === 'file:') 
-                         ? 'http://127.0.0.1:5000/api' 
+                         ? '/api'
+                         //? 'http://rick-pc:5000/api'
+                        // ? 'http://127.0.0.1:5000/api' 
                          : window.location.origin + '/api';
         let currentUser = null;
         let currentLoginRole = '';
@@ -1294,17 +1296,9 @@
 
             if (duration) {
                 let newExpiry = new Date();
-                
-                // Check if there's already an active future expiry date
-                if (currentUser.license_expiry) {
-                    let currentExp = new Date(currentUser.license_expiry);
-                    if (currentExp > newExpiry) {
-                        newExpiry = currentExp; // Naye days existing date par add honge
-                    }
-                }
                 newExpiry.setDate(newExpiry.getDate() + duration); // Dynamic Duration limit
                 
-                let data = { ...currentUser, license_expiry: newExpiry.toISOString(), current_key: key.toUpperCase() };
+                let data = { ...currentUser, license_expiry: newExpiry.toISOString() };
                 try {
                     const res = await fetch(`${API_BASE}/users`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
                     const saved = await res.json();
@@ -2816,24 +2810,11 @@
             let html = '';
             users.forEach((u, i) => {
                 if(u.type !== 'Owner') return;
-                
-                let expiryText = 'N/A';
-                let expiryColor = 'var(--danger)';
-                if (u.license_expiry) {
-                    let expDate = new Date(u.license_expiry);
-                    expiryText = expDate.toLocaleDateString();
-                    if (expDate > new Date()) expiryColor = 'var(--success)';
-                }
-                let currentKey = u.current_key || 'No Key';
-
                 html += `<tr style="animation-delay:${i * 0.04}s">
                     <td>${u.name}</td>
                     <td>${u.company || '-'}</td>
                     <td>${u.login_id}</td>
-                    <td>${u.email || '-'}<br>
-                        <span style="font-size:11px; color:var(--primary);">🔑 ${currentKey}</span><br>
-                        <span style="font-size:11px; color:${expiryColor};">⏳ Exp: ${expiryText}</span>
-                    </td>
+                    <td>${u.email || '-'}</td>
                     <td>
                         <button class="badge" style="background:var(--danger)" onclick="resetPassword('${u.login_id}', 'Owner')">Reset Pass</button>
                     </td>
@@ -2849,24 +2830,17 @@
             licenses.slice().reverse().forEach((l, i) => {
                 const realIdx = licenses.length - 1 - i;
                 let statusColor = l.status === 'Active' ? 'var(--success)' : (l.status === 'Used' ? 'var(--danger)' : 'var(--text)');
-            
-            let usedByName = l.used_by || '-';
-            if (l.used_by) {
-                let ownerUser = users.find(u => u.login_id === l.used_by);
-                if (ownerUser) {
-                    usedByName = `${ownerUser.name} (${ownerUser.company || ownerUser.login_id})`;
-                }
-            }
-            
+                let usedOnDate = l.used_on ? new Date(l.used_on).toLocaleDateString() : '-';
                 html += `<tr style="animation-delay:${i * 0.04}s">
                     <td style="font-family:monospace; font-weight:bold; color:var(--primary);">${l.key_code}</td>
                     <td>${l.duration_days} Days</td>
                     <td style="color:${statusColor}; font-weight:bold;">${l.status || 'Active'}</td>
-                    <td>${usedByName}</td>
+                    <td>${l.used_by || '-'}</td>
+                    <td>${usedOnDate}</td>
                     <td><button class="badge" style="background:var(--danger)" onclick="deleteItem(${realIdx}, 'license')">Del</button></td>
                 </tr>`;
             });
-            if(html === '') html = '<tr><td colspan="5" style="text-align:center; padding:15px;">No licenses generated yet.</td></tr>';
+            if(html === '') html = '<tr><td colspan="6" style="text-align:center; padding:15px;">No licenses generated yet.</td></tr>';
             tbody.innerHTML = html;
         }
 
