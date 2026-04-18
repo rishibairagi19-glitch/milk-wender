@@ -130,33 +130,12 @@ def login():
     id_field = 'cid' if role == 'Customer' else 'login_id'
 
     try:
-        safe_id = login_id.strip()
-        matches = []
-        
-        def get_matches(column):
-            try:
-                q = supabase.table(table).select('*')
-                if column in [id_field, 'username', 'email']:
-                    return q.ilike(column, safe_id).execute().data or []
-                return q.eq(column, safe_id).execute().data or []
-            except Exception:
-                return [] # 🛡️ Ignore Type Mismatch errors (e.g., searching Email in a BigInt Mobile column)
-
-        # 🛡️ BULLETPROOF LOGIN: Use sequential matching to bypass buggy PostgREST string parsing
-        matches.extend(get_matches(id_field))
-        if not matches: matches.extend(get_matches('username'))
-        if not matches: matches.extend(get_matches('mobile'))
-        if not matches and role != 'Customer': matches.extend(get_matches('email'))
-
-        user = None
-        if matches:
-            for m in matches:
-                db_role = m.get('type')
-                if (role == 'Owner' and db_role in ['Owner', 'Admin']) or (role == 'Milk Man' and db_role == 'Milk Man') or (role == 'Customer'):
-                    user = m
-                    break
-            if not user:
-                user = matches[0]
+        if role == 'Customer':
+            or_cond = f'{id_field}.ilike."{login_id}",username.ilike."{login_id}",mobile.eq."{login_id}"'
+        else:
+            or_cond = f'{id_field}.ilike."{login_id}",username.ilike."{login_id}",mobile.eq."{login_id}",email.ilike."{login_id}"'
+        user_res = supabase.table(table).select('*').or_(or_cond).execute()
+        user = user_res.data[0] if user_res.data else None
     except Exception as e:
         print("Login DB Error:", e)
         user = None
@@ -184,7 +163,7 @@ def login():
     company = user.get('company', '')
 
     # 🚀 SPEED FIX: Faltu heavy Base64 images aur passwords ko background list se hata diya
-    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, qr_code, license_expiry, current_key'
+    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, qr_code, license_expiry'
     c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no, seq_no_eve'
 
     user_to_return = user.copy()
@@ -207,7 +186,7 @@ def sync_data():
     name = req_data.get('name')
     
     # 🚀 SPEED FIX: Removed heavy 'qr_code' from background fetching to reduce megabytes of payload
-    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, license_expiry, current_key'
+    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, license_expiry'
     c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no, seq_no_eve'
 
     def safe_get(f):
@@ -234,7 +213,7 @@ def sync_data():
                 f_p = executor.submit(lambda: supabase.table('sys_products').select('*').eq('company', company).execute().data)
                 f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('company', company).order('id', desc=True).limit(20).execute().data)
                 f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').eq('company', company).execute().data)
-                f_l = executor.submit(lambda: [])
+                f_l = executor.submit(lambda: supabase.table('sys_licenses').select('*').eq('used_by', login_id).execute().data)
         return jsonify({"success": True, "data": {"users": safe_get(f_u), "customers": safe_get(f_c), "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro), "licenses": safe_get(f_l)}})
         
     elif role == 'Milk Man':
@@ -291,15 +270,9 @@ def save_data(table_name):
         
         # 🚀 SPEED FIX: Combine 4 queries into 1 query
         or_conditions = []
-        if username: 
-            safe_u = username.replace(',', '').strip()
-            or_conditions.append(f'username.ilike.{safe_u}')
-        if user_type and mobile: 
-            safe_m = mobile.replace(',', '').strip()
-            or_conditions.append(f'mobile.eq.{safe_m}')
-        if user_type and email: 
-            safe_e = email.replace(',', '').strip()
-            or_conditions.append(f'email.ilike.{safe_e}')
+        if username: or_conditions.append(f'username.ilike."{username}"')
+        if user_type and mobile: or_conditions.append(f'mobile.eq."{mobile}"')
+        if user_type and email: or_conditions.append(f'email.eq."{email}"')
 
         if or_conditions:
             q = supabase.table('sys_users').select('id, username, mobile, email, type').or_(",".join(or_conditions))
@@ -321,12 +294,8 @@ def save_data(table_name):
         
         # 🚀 SPEED FIX: Combine queries
         or_conditions = []
-        if username: 
-            safe_u = username.replace(',', '').strip()
-            or_conditions.append(f'username.ilike.{safe_u}')
-        if mobile: 
-            safe_m = mobile.replace(',', '').strip()
-            or_conditions.append(f'mobile.eq.{safe_m}')
+        if username: or_conditions.append(f'username.ilike."{username}"')
+        if mobile: or_conditions.append(f'mobile.eq."{mobile}"')
         
         if or_conditions:
             q = supabase.table('sys_customers').select('id, username, mobile').or_(",".join(or_conditions))
@@ -465,10 +434,34 @@ def verify_key():
     if res.data:
         license_data = res.data[0]
         duration_days = license_data.get('duration_days', 30)
-        
-        supabase.table('sys_licenses').update({'status': 'Used', 'used_by': owner_id}).eq('id', license_data['id']).execute()
-        return jsonify({'success': True, 'duration_days': duration_days})
-        
+
+        owner_res = supabase.table('sys_users').select('license_expiry').eq('login_id', owner_id).execute()
+        if not owner_res.data:
+            return jsonify({'success': False, 'message': 'Owner not found.'})
+
+        owner_data = owner_res.data[0]
+        current_expiry_str = owner_data.get('license_expiry')
+
+        # Use timezone-aware datetime objects (UTC)
+        base_date = datetime.datetime.now(datetime.timezone.utc)
+        if current_expiry_str:
+            try:
+                current_expiry_date = datetime.datetime.fromisoformat(current_expiry_str)
+                # If the stored date is naive, assume it's UTC
+                if current_expiry_date.tzinfo is None:
+                    current_expiry_date = current_expiry_date.replace(tzinfo=datetime.timezone.utc)
+
+                if current_expiry_date > base_date:
+                    base_date = current_expiry_date
+            except (ValueError, TypeError):
+                # If parsing fails, just use current date as base.
+                pass
+
+        new_expiry_date = base_date + datetime.timedelta(days=duration_days)
+        supabase.table('sys_licenses').update({'status': 'Used', 'used_by': owner_id, 'used_on': datetime.datetime.now(datetime.timezone.utc).isoformat()}).eq('id', license_data['id']).execute()
+        supabase.table('sys_users').update({'license_expiry': new_expiry_date.isoformat()}).eq('login_id', owner_id).execute()
+        return jsonify({'success': True, 'message': f'License extended! New expiry: {new_expiry_date.strftime("%d-%b-%Y")}', 'new_expiry': new_expiry_date.isoformat()})
+
     return jsonify({'success': False, 'message': 'Invalid or Expired Key'})
 
 # New API to get opening balance for a customer for a specific month/year
