@@ -131,9 +131,9 @@ def login():
 
     try:
         if role == 'Customer':
-            or_cond = f'{id_field}.ilike."{login_id}",username.ilike."{login_id}",mobile.eq."{login_id}"'
+            or_cond = f'{id_field}.eq."{login_id}",username.eq."{login_id}",mobile.eq."{login_id}"'
         else:
-            or_cond = f'{id_field}.ilike."{login_id}",username.ilike."{login_id}",mobile.eq."{login_id}",email.ilike."{login_id}"'
+            or_cond = f'{id_field}.eq."{login_id}",username.eq."{login_id}",mobile.eq."{login_id}",email.eq."{login_id}"'
         user_res = supabase.table(table).select('*').or_(or_cond).execute()
         user = user_res.data[0] if user_res.data else None
     except Exception as e:
@@ -163,7 +163,7 @@ def login():
     company = user.get('company', '')
 
     # 🚀 SPEED FIX: Faltu heavy Base64 images aur passwords ko background list se hata diya
-    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, qr_code, license_expiry'
+    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, qr_code, license_expiry, current_key'
     c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no, seq_no_eve'
 
     user_to_return = user.copy()
@@ -186,7 +186,7 @@ def sync_data():
     name = req_data.get('name')
     
     # 🚀 SPEED FIX: Removed heavy 'qr_code' from background fetching to reduce megabytes of payload
-    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, license_expiry'
+    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, license_expiry, current_key'
     c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no, seq_no_eve'
 
     def safe_get(f):
@@ -270,7 +270,7 @@ def save_data(table_name):
         
         # 🚀 SPEED FIX: Combine 4 queries into 1 query
         or_conditions = []
-        if username: or_conditions.append(f'username.ilike."{username}"')
+        if username: or_conditions.append(f'username.eq."{username}"')
         if user_type and mobile: or_conditions.append(f'mobile.eq."{mobile}"')
         if user_type and email: or_conditions.append(f'email.eq."{email}"')
 
@@ -294,7 +294,7 @@ def save_data(table_name):
         
         # 🚀 SPEED FIX: Combine queries
         or_conditions = []
-        if username: or_conditions.append(f'username.ilike."{username}"')
+        if username: or_conditions.append(f'username.eq."{username}"')
         if mobile: or_conditions.append(f'mobile.eq."{mobile}"')
         
         if or_conditions:
