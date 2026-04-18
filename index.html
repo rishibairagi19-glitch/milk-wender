@@ -1296,7 +1296,8 @@
 
             if (duration) {
                 let newExpiry = new Date();
-                 // Check if there's already an active future expiry date
+                
+                // Check if there's already an active future expiry date
                 if (currentUser.license_expiry) {
                     let currentExp = new Date(currentUser.license_expiry);
                     if (currentExp > newExpiry) {
@@ -2826,6 +2827,7 @@
                     if (expDate > new Date()) expiryColor = 'var(--success)';
                 }
                 let currentKey = u.current_key || 'No Key';
+
                 html += `<tr style="animation-delay:${i * 0.04}s">
                     <td>${u.name}</td>
                     <td>${u.company || '-'}</td>
