@@ -134,10 +134,13 @@ def login():
         matches = []
         
         def get_matches(column):
-            q = supabase.table(table).select('*')
-            if column in [id_field, 'username', 'email']:
-                return q.ilike(column, safe_id).execute().data or []
-            return q.eq(column, safe_id).execute().data or []
+            try:
+                q = supabase.table(table).select('*')
+                if column in [id_field, 'username', 'email']:
+                    return q.ilike(column, safe_id).execute().data or []
+                return q.eq(column, safe_id).execute().data or []
+            except Exception:
+                return [] # 🛡️ Ignore Type Mismatch errors (e.g., searching Email in a BigInt Mobile column)
 
         # 🛡️ BULLETPROOF LOGIN: Use sequential matching to bypass buggy PostgREST string parsing
         matches.extend(get_matches(id_field))
