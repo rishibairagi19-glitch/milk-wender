@@ -991,9 +991,7 @@
         // 🚀 SPEED FIX: Hardcoded 'RICK-PC' se local network me DNS resolution me 2-3 seconds lagte hain.
         // Ab dynamic base URL use hoga (0 delay).
         const API_BASE = (window.location.hostname === '' || window.location.protocol === 'file:') 
-                         ? '/api'
-                         //? 'http://rick-pc:5000/api'
-                        // ? 'http://127.0.0.1:5000/api' 
+                         ? 'http://127.0.0.1:5000/api' 
                          : window.location.origin + '/api';
         let currentUser = null;
         let currentLoginRole = '';
