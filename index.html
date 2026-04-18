@@ -1221,83 +1221,26 @@
                 return;
             }
             
-                let btnsToHide = ['btnShowNewUser', 'btnShowNewCust', 'btnShowNewProduct', 'tabGbNew'];
-                let isAd = currentUser && currentUser.type === 'Admin';
-        let expiry = null;
-
-        if (currentUser && !isAd) {
-            if (currentUser.type === 'Owner') {
-                expiry = currentUser.license_expiry;
-            } else {
-                let owner = users.find(u => u.type === 'Owner' && u.company === currentUser.company);
-                if (owner) expiry = owner.license_expiry;
-            }
-        }
-                let valid = false;
-        let daysExpired = 0;
-        let gracePeriodDays = 7; // 7 days limited access before strict block
-
-        if (isAd) {
-            valid = true;
-        } else if (expiry) {
-            let expDate = new Date(expiry);
-            let today = new Date(new Date().setHours(0,0,0,0));
-            if (expDate >= today) {
-                valid = true;
-            } else {
-                let diffTime = today - expDate;
-                daysExpired = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                if (isNaN(daysExpired)) daysExpired = 999;
-                }
-                
-            } else {
-                daysExpired = 999; // No expiry set -> strict block
-        }
-
-        let menuGrid = document.querySelector('.menu-grid');
-        
-        if (!valid && currentUser && !isAd) {
-            if (daysExpired > gracePeriodDays) {
-                // TOTAL BLOCK
-                let msg = "🚫 ACCESS BLOCKED: Owner's License completely expired. Please contact your Owner.";
-                if (currentUser.type === 'Owner') {
-                    msg = `🚫 ACCESS BLOCKED: Your License expired ${daysExpired > 100 ? '' : daysExpired + ' days ago'}. App is locked. <button onclick="enterLicenseKey()" style="margin-left:10px; padding:4px 10px; cursor:pointer; background:white; color:var(--danger); border:none; border-radius:4px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.2);">Unlock Now</button>`;
-                }
-                banner.innerHTML = msg;
-                banner.classList.remove('hidden');
-                banner.style.background = '#991b1b'; // Dark Red
-                document.body.style.paddingTop = '110px';
-                
-                if (menuGrid) menuGrid.style.display = 'none';
-                btnsToHide.forEach(id => { let el = document.getElementById(id); if (el) el.style.display = 'none'; });
-
-                const restrictedViews = ['ledger-master', 'user-master', 'product-master', 'route-master', 'request-master', 'accounts-user', 'general-bill-view', 'main-menu', 'customer-self-view'];
-                if (restrictedViews.includes(currentView)) {
-                    setTimeout(() => { showView('profile-view'); }, 50); // Force to profile view to enter Key
-                }
-            } else {
-                // GRACE PERIOD (LIMITED ACCESS)
-                let daysLeft = Math.max(0, gracePeriodDays - daysExpired);
-                let msg = `⚠️ LIMITED ACCESS: Owner's License expired. App will completely block in ${daysLeft} days.`;
-                if (currentUser.type === 'Owner') {
-                    msg = `⚠️ LIMITED ACCESS: Your License has expired! App fully locks in ${daysLeft} days. <button onclick="enterLicenseKey()" style="margin-left:10px; padding:4px 10px; cursor:pointer; background:white; color:var(--danger); border:none; border-radius:4px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.2);">Renew Now</button>`;
-                }
-                banner.innerHTML = msg;
-                banner.classList.remove('hidden');
-                banner.style.background = 'var(--danger)'; // Standard Red
-                document.body.style.paddingTop = '110px';
-                
-                if (menuGrid) menuGrid.style.display = '';
-                btnsToHide.forEach(id => { let el = document.getElementById(id); if (el) el.style.display = 'none'; });
-            }
-        } else {
-            // FULL ACCESS
-            banner.classList.add('hidden');
-            banner.style.background = 'var(--danger)';
-            document.body.style.paddingTop = '80px';
+            let valid = isLicenseValid();
+            let btnsToHide = ['btnShowNewUser', 'btnShowNewCust', 'btnShowNewProduct', 'tabGbNew'];
             
-            if (menuGrid) menuGrid.style.display = '';
-            btnsToHide.forEach(id => { let el = document.getElementById(id); if (el) el.style.display = ''; });
+            if (!valid && currentUser) {
+                let msg = "⚠️ LIMITED ACCESS: Owner's License expired or missing. Please ask Owner to renew.";
+                if (currentUser.type === 'Owner') {
+                    msg = `⚠️ LIMITED ACCESS: Your License has expired. <button onclick="enterLicenseKey()" style="margin-left:10px; padding:4px 10px; cursor:pointer; background:white; color:var(--danger); border:none; border-radius:4px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.2);">Unlock Now</button>`;
+                }
+                banner.innerHTML = msg;
+                banner.classList.remove('hidden');
+                document.body.style.paddingTop = '110px';
+                
+                // Hide creation buttons to restrict new entries
+                btnsToHide.forEach(id => { let el = document.getElementById(id); if (el) el.style.display = 'none'; });
+            } else {
+                banner.classList.add('hidden');
+                document.body.style.paddingTop = '80px';
+                
+                // Restore buttons
+                btnsToHide.forEach(id => { let el = document.getElementById(id); if (el) el.style.display = ''; });
             }
         }
 
@@ -2887,6 +2830,15 @@
             licenses.slice().reverse().forEach((l, i) => {
                 const realIdx = licenses.length - 1 - i;
                 let statusColor = l.status === 'Active' ? 'var(--success)' : (l.status === 'Used' ? 'var(--danger)' : 'var(--text)');
+            
+            let usedByName = l.used_by || '-';
+            if (l.used_by) {
+                let ownerUser = users.find(u => u.login_id === l.used_by);
+                if (ownerUser) {
+                    usedByName = `${ownerUser.name} (${ownerUser.company || ownerUser.login_id})`;
+                }
+            }
+            
                 html += `<tr style="animation-delay:${i * 0.04}s">
                     <td style="font-family:monospace; font-weight:bold; color:var(--primary);">${l.key_code}</td>
                     <td>${l.duration_days} Days</td>
