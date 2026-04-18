@@ -213,7 +213,7 @@ def sync_data():
                 f_p = executor.submit(lambda: supabase.table('sys_products').select('*').eq('company', company).execute().data)
                 f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('company', company).order('id', desc=True).limit(20).execute().data)
                 f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').eq('company', company).execute().data)
-                f_l = executor.submit(lambda: supabase.table('sys_licenses').select('*').eq('used_by', login_id).execute().data)
+                f_l = executor.submit(lambda: [])
         return jsonify({"success": True, "data": {"users": safe_get(f_u), "customers": safe_get(f_c), "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro), "licenses": safe_get(f_l)}})
         
     elif role == 'Milk Man':
@@ -434,34 +434,10 @@ def verify_key():
     if res.data:
         license_data = res.data[0]
         duration_days = license_data.get('duration_days', 30)
-
-        owner_res = supabase.table('sys_users').select('license_expiry').eq('login_id', owner_id).execute()
-        if not owner_res.data:
-            return jsonify({'success': False, 'message': 'Owner not found.'})
-
-        owner_data = owner_res.data[0]
-        current_expiry_str = owner_data.get('license_expiry')
-
-        # Use timezone-aware datetime objects (UTC)
-        base_date = datetime.datetime.now(datetime.timezone.utc)
-        if current_expiry_str:
-            try:
-                current_expiry_date = datetime.datetime.fromisoformat(current_expiry_str)
-                # If the stored date is naive, assume it's UTC
-                if current_expiry_date.tzinfo is None:
-                    current_expiry_date = current_expiry_date.replace(tzinfo=datetime.timezone.utc)
-
-                if current_expiry_date > base_date:
-                    base_date = current_expiry_date
-            except (ValueError, TypeError):
-                # If parsing fails, just use current date as base.
-                pass
-
-        new_expiry_date = base_date + datetime.timedelta(days=duration_days)
-        supabase.table('sys_licenses').update({'status': 'Used', 'used_by': owner_id, 'used_on': datetime.datetime.now(datetime.timezone.utc).isoformat()}).eq('id', license_data['id']).execute()
-        supabase.table('sys_users').update({'license_expiry': new_expiry_date.isoformat()}).eq('login_id', owner_id).execute()
-        return jsonify({'success': True, 'message': f'License extended! New expiry: {new_expiry_date.strftime("%d-%b-%Y")}', 'new_expiry': new_expiry_date.isoformat()})
-
+        
+        supabase.table('sys_licenses').update({'status': 'Used', 'used_by': owner_id}).eq('id', license_data['id']).execute()
+        return jsonify({'success': True, 'duration_days': duration_days})
+        
     return jsonify({'success': False, 'message': 'Invalid or Expired Key'})
 
 # New API to get opening balance for a customer for a specific month/year
