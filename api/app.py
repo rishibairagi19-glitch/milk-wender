@@ -130,14 +130,30 @@ def login():
     id_field = 'cid' if role == 'Customer' else 'login_id'
 
     try:
-        # 🛡️ BUG FIX: Added double quotes to safely support Emails (@, .) and Spaces in PostgREST queries
-        safe_id = login_id.replace('"', '').replace('\\', '')
-        if role == 'Customer':
-            or_cond = f'{id_field}.ilike."{safe_id}",username.ilike."{safe_id}",mobile.eq."{safe_id}"'
-        else:
-            or_cond = f'{id_field}.ilike."{safe_id}",username.ilike."{safe_id}",mobile.eq."{safe_id}",email.ilike."{safe_id}"'
-        user_res = supabase.table(table).select('*').or_(or_cond).execute()
-        user = user_res.data[0] if user_res.data else None
+        safe_id = login_id.strip()
+        matches = []
+        
+        def get_matches(column):
+            q = supabase.table(table).select('*')
+            if column in [id_field, 'username', 'email']:
+                return q.ilike(column, safe_id).execute().data or []
+            return q.eq(column, safe_id).execute().data or []
+
+        # 🛡️ BULLETPROOF LOGIN: Use sequential matching to bypass buggy PostgREST string parsing
+        matches.extend(get_matches(id_field))
+        if not matches: matches.extend(get_matches('username'))
+        if not matches: matches.extend(get_matches('mobile'))
+        if not matches and role != 'Customer': matches.extend(get_matches('email'))
+
+        user = None
+        if matches:
+            for m in matches:
+                db_role = m.get('type')
+                if (role == 'Owner' and db_role in ['Owner', 'Admin']) or (role == 'Milk Man' and db_role == 'Milk Man') or (role == 'Customer'):
+                    user = m
+                    break
+            if not user:
+                user = matches[0]
     except Exception as e:
         print("Login DB Error:", e)
         user = None
@@ -273,14 +289,14 @@ def save_data(table_name):
         # 🚀 SPEED FIX: Combine 4 queries into 1 query
         or_conditions = []
         if username: 
-            safe_u = username.replace('"', '')
-            or_conditions.append(f'username.ilike."{safe_u}"')
+            safe_u = username.replace(',', '').strip()
+            or_conditions.append(f'username.ilike.{safe_u}')
         if user_type and mobile: 
-            safe_m = mobile.replace('"', '')
-            or_conditions.append(f'mobile.eq."{safe_m}"')
+            safe_m = mobile.replace(',', '').strip()
+            or_conditions.append(f'mobile.eq.{safe_m}')
         if user_type and email: 
-            safe_e = email.replace('"', '')
-            or_conditions.append(f'email.ilike."{safe_e}"')
+            safe_e = email.replace(',', '').strip()
+            or_conditions.append(f'email.ilike.{safe_e}')
 
         if or_conditions:
             q = supabase.table('sys_users').select('id, username, mobile, email, type').or_(",".join(or_conditions))
@@ -303,11 +319,11 @@ def save_data(table_name):
         # 🚀 SPEED FIX: Combine queries
         or_conditions = []
         if username: 
-            safe_u = username.replace('"', '')
-            or_conditions.append(f'username.ilike."{safe_u}"')
+            safe_u = username.replace(',', '').strip()
+            or_conditions.append(f'username.ilike.{safe_u}')
         if mobile: 
-            safe_m = mobile.replace('"', '')
-            or_conditions.append(f'mobile.eq."{safe_m}"')
+            safe_m = mobile.replace(',', '').strip()
+            or_conditions.append(f'mobile.eq.{safe_m}')
         
         if or_conditions:
             q = supabase.table('sys_customers').select('id, username, mobile').or_(",".join(or_conditions))
