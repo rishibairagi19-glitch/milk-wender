@@ -163,7 +163,7 @@ def login():
     company = user.get('company', '')
 
     # 🚀 SPEED FIX: Faltu heavy Base64 images aur passwords ko background list se hata diya
-    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, qr_code'
+    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, qr_code, license_expiry'
     c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no, seq_no_eve'
 
     user_to_return = user.copy()
@@ -185,8 +185,27 @@ def sync_data():
     company = req_data.get('company')
     name = req_data.get('name')
     
+    # License Expiry Check for Owners
+    if role == 'Owner' and company != 'SuperAdmin':
+        user_res = supabase.table('sys_users').select('license_expiry').eq('login_id', login_id).execute()
+        if not user_res.data:
+            return jsonify({"success": False, "message": "Could not verify user license."}), 403
+        
+        expiry_str = user_res.data[0].get('license_expiry')
+        if not expiry_str:
+            return jsonify({"success": False, "message": "Your license is not active. Please contact support."}), 403
+
+        try:
+            expiry_date = datetime.datetime.fromisoformat(expiry_str)
+            if expiry_date.tzinfo is None:
+                expiry_date = expiry_date.replace(tzinfo=datetime.timezone.utc)
+            if datetime.datetime.now(datetime.timezone.utc) > expiry_date:
+                return jsonify({"success": False, "message": "Your license has expired. Please renew to continue access."}), 403
+        except (ValueError, TypeError):
+            return jsonify({"success": False, "message": "Invalid license format. Please contact support."}), 403
+
     # 🚀 SPEED FIX: Removed heavy 'qr_code' from background fetching to reduce megabytes of payload
-    u_cols = 'id, name, login_id, type, company, email, address, route, mobile'
+    u_cols = 'id, name, login_id, type, company, email, address, route, mobile, license_expiry'
     c_cols = 'id, name, addr, cid, defItem, defQty, defRate, company, milkman_id, route, shift, mobile, seq_no, seq_no_eve'
 
     def safe_get(f):
@@ -197,7 +216,7 @@ def sync_data():
             return []
 
     if role in ['Owner', 'Admin']:
-        with ThreadPoolExecutor(max_workers=6) as executor:
+        with ThreadPoolExecutor(max_workers=7) as executor:
             if company == 'SuperAdmin':
                 f_u = executor.submit(lambda: supabase.table('sys_users').select(u_cols).execute().data)
                 f_c = executor.submit(lambda: supabase.table('sys_customers').select(c_cols).execute().data)
@@ -205,6 +224,7 @@ def sync_data():
                 f_p = executor.submit(lambda: supabase.table('sys_products').select('*').execute().data)
                 f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').order('id', desc=True).limit(20).execute().data)
                 f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').execute().data)
+                f_l = executor.submit(lambda: supabase.table('sys_licenses').select('*').execute().data)
             else:
                 f_u = executor.submit(lambda: supabase.table('sys_users').select(u_cols).eq('company', company).execute().data)
                 f_c = executor.submit(lambda: supabase.table('sys_customers').select(c_cols).eq('company', company).execute().data)
@@ -212,7 +232,25 @@ def sync_data():
                 f_p = executor.submit(lambda: supabase.table('sys_products').select('*').eq('company', company).execute().data)
                 f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('company', company).order('id', desc=True).limit(20).execute().data)
                 f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').eq('company', company).execute().data)
-        return jsonify({"success": True, "data": {"users": safe_get(f_u), "customers": safe_get(f_c), "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro)}})
+                f_l = executor.submit(lambda: supabase.table('sys_licenses').select('*').eq('used_by', login_id).execute().data)
+        
+        users = safe_get(f_u)
+        customers = safe_get(f_c)
+        transactions = safe_get(f_t)
+        products = safe_get(f_p)
+        requests = safe_get(f_r)
+        routes = safe_get(f_ro)
+        licenses = safe_get(f_l)
+
+        if company == 'SuperAdmin':
+            user_map = {user['login_id']: user for user in users}
+            for lic in licenses:
+                if lic.get('used_by') in user_map:
+                    user_info = user_map[lic['used_by']]
+                    lic['used_by_name'] = user_info.get('name')
+                    lic['used_by_company'] = user_info.get('company')
+
+        return jsonify({"success": True, "data": {"users": users, "customers": customers, "transactions": transactions, "products": products, "requests": requests, "routes": routes, "licenses": licenses}})
         
     elif role == 'Milk Man':
         milkman_customers_res = supabase.table('sys_customers').select(c_cols).eq('company', company).eq('milkman_id', login_id).execute()
@@ -234,7 +272,7 @@ def sync_data():
         try: milkman_trans = f_t.result()
         except Exception: milkman_trans = []
         
-        return jsonify({"success": True, "data": {"users": [], "customers": milkman_customers, "transactions": milkman_trans, "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro)}})
+        return jsonify({"success": True, "data": {"users": [], "customers": milkman_customers, "transactions": milkman_trans, "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro), "licenses": []}})
         
     elif role == 'Customer':
         with ThreadPoolExecutor(max_workers=5) as executor:
@@ -243,7 +281,7 @@ def sync_data():
             f_r = executor.submit(lambda: supabase.table('sys_requests').select('*').eq('cust_id', login_id).eq('company', company).order('id', desc=True).limit(15).execute().data)
             f_ro = executor.submit(lambda: supabase.table('sys_routes').select('*').eq('company', company).execute().data)
             f_u = executor.submit(lambda: supabase.table('sys_users').select(u_cols + ', qr_code').eq('company', company).eq('type', 'Owner').execute().data)
-        return jsonify({"success": True, "data": {"users": safe_get(f_u), "customers": [], "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro)}})
+        return jsonify({"success": True, "data": {"users": safe_get(f_u), "customers": [], "transactions": safe_get(f_t), "products": safe_get(f_p), "requests": safe_get(f_r), "routes": safe_get(f_ro), "licenses": []}})
     return jsonify({"success": False})
 
 
@@ -252,7 +290,7 @@ def sync_data():
 def save_data(table_name):
     data = request.json
     
-    if table_name not in ['users', 'customers', 'transactions', 'products', 'requests', 'routes']:
+    if table_name not in ['users', 'customers', 'transactions', 'products', 'requests', 'routes', 'licenses']:
         return jsonify({"success": False, "message": "Invalid table"}), 400
         
     db_table = 'sys_' + (table_name if table_name != 'transactions' else 'trans')
@@ -413,11 +451,54 @@ def reset_password():
 
 @app.route('/api/<table_name>/<int:item_id>', methods=['DELETE'])
 def delete_data(table_name, item_id):
-    if table_name not in ['users', 'customers', 'transactions', 'products', 'requests', 'routes']:
+    if table_name not in ['users', 'customers', 'transactions', 'products', 'requests', 'routes', 'licenses']:
         return jsonify({"success": False, "message": "Invalid table"}), 400
     db_table = 'sys_' + (table_name if table_name != 'transactions' else 'trans')
     supabase.table(db_table).delete().eq('id', item_id).execute()
     return jsonify({"success": True})
+
+@app.route('/api/verify_key', methods=['POST'])
+def verify_key():
+    data = request.json
+    key = (data.get('key') or '').strip().upper()
+    owner_id = data.get('owner_id')
+    
+    if not key:
+        return jsonify({'success': False, 'message': 'Invalid Key'})
+        
+    res = supabase.table('sys_licenses').select('*').eq('key_code', key).eq('status', 'Active').execute()
+    if res.data:
+        license_data = res.data[0]
+        duration_days = license_data.get('duration_days', 30)
+
+        owner_res = supabase.table('sys_users').select('license_expiry').eq('login_id', owner_id).execute()
+        if not owner_res.data:
+            return jsonify({'success': False, 'message': 'Owner not found.'})
+
+        owner_data = owner_res.data[0]
+        current_expiry_str = owner_data.get('license_expiry')
+
+        # Use timezone-aware datetime objects (UTC)
+        base_date = datetime.datetime.now(datetime.timezone.utc)
+        if current_expiry_str:
+            try:
+                current_expiry_date = datetime.datetime.fromisoformat(current_expiry_str)
+                # If the stored date is naive, assume it's UTC
+                if current_expiry_date.tzinfo is None:
+                    current_expiry_date = current_expiry_date.replace(tzinfo=datetime.timezone.utc)
+
+                if current_expiry_date > base_date:
+                    base_date = current_expiry_date
+            except (ValueError, TypeError):
+                # If parsing fails, just use current date as base.
+                pass
+
+        new_expiry_date = base_date + datetime.timedelta(days=duration_days)
+        supabase.table('sys_licenses').update({'status': 'Used', 'used_by': owner_id, 'used_on': datetime.datetime.now(datetime.timezone.utc).isoformat()}).eq('id', license_data['id']).execute()
+        supabase.table('sys_users').update({'license_expiry': new_expiry_date.isoformat()}).eq('login_id', owner_id).execute()
+        return jsonify({'success': True, 'message': f'License extended! New expiry: {new_expiry_date.strftime("%d-%b-%Y")}', 'new_expiry': new_expiry_date.isoformat()})
+
+    return jsonify({'success': False, 'message': 'Invalid or Expired Key'})
 
 # New API to get opening balance for a customer for a specific month/year
 @app.route('/api/opening_balance', methods=['GET'])
